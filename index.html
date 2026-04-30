@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prompt Max — A sua casa de Prompts</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #080b14; --glass: rgba(255,255,255,0.04); --glass-border: rgba(255,255,255,0.10);
+      --glass-hover: rgba(255,255,255,0.07); --text: #ffffff; --muted: rgba(255,255,255,0.55);
+      --muted2: rgba(255,255,255,0.35); --green: #22c55e; --pink: #e879f9;
+      --amber: #f59e0b; --blue: #60a5fa; --purple: #a78bfa; --radius: 20px;
+    }
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; min-height: 100vh; overflow-x: hidden; }
+    ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: var(--bg); } ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+
+    .bg-blobs { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+    .blob { position: absolute; border-radius: 50%; filter: blur(80px); }
+    .blob-1 { width: 700px; height: 700px; background: #1e1040; top: -200px; left: -200px; opacity: 0.8; }
+    .blob-2 { width: 500px; height: 500px; background: #0d1f3c; top: -100px; right: -150px; opacity: 0.7; }
+    .blob-3 { width: 600px; height: 400px; background: #130d2e; bottom: 10%; left: 5%; opacity: 0.7; }
+    .blob-4 { width: 450px; height: 600px; background: #0f1a30; bottom: -100px; right: 5%; opacity: 0.6; }
+    .blob-5 { width: 350px; height: 350px; background: #1a0e35; top: 45%; left: 45%; opacity: 0.5; }
+
+    .app { position: relative; z-index: 1; }
+    .view { display: none; } .view.active { display: block; }
+
+    /* NAV */
+    nav { position: sticky; top: 0; z-index: 200; display: flex; align-items: center; justify-content: space-between; padding: 0 36px; height: 62px; background: rgba(8,11,20,0.65); border-bottom: 1px solid var(--glass-border); backdrop-filter: blur(24px); }
+    .logo { font-size: 19px; font-weight: 800; cursor: pointer; }
+    .logo em { font-style: normal; background: linear-gradient(90deg, var(--amber) 0%, var(--pink) 50%, var(--purple) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .nav-tabs { display: flex; gap: 4px; }
+    .ntab { padding: 6px 18px; border-radius: 10px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid transparent; background: transparent; color: var(--muted); font-family: 'Inter', sans-serif; transition: all 0.15s; }
+    .ntab:hover { color: var(--text); } .ntab.active { color: var(--text); background: var(--glass); border-color: var(--glass-border); }
+    .nav-right { display: flex; gap: 8px; }
+    .btn-ghost { padding: 7px 18px; border-radius: 10px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid var(--glass-border); background: transparent; color: var(--muted); font-family: 'Inter', sans-serif; transition: all 0.15s; }
+    .btn-ghost:hover { color: var(--text); }
+    .btn-pill { padding: 7px 20px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.08); color: var(--text); font-family: 'Inter', sans-serif; transition: all 0.15s; }
+    .btn-pill:hover { background: rgba(255,255,255,0.14); }
+
+    /* HERO */
+    .hero { padding: 96px 36px 56px; text-align: center; position: relative; overflow: hidden; }
+    .hero-video-wrap { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+    .hero-video-wrap::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(8,11,20,0.5) 0%, rgba(8,11,20,0.25) 40%, rgba(8,11,20,0.85) 100%); }
+    .hero-video { width: 100%; height: 100%; object-fit: cover; opacity: 0.55; }
+    .hero-content { position: relative; z-index: 1; }
+    .hero-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); display: block; }
+    .hero h1 { font-size: clamp(56px, 9vw, 108px); font-weight: 800; line-height: 1.0; letter-spacing: -3px; margin-bottom: 22px; }
+    .hero h1 .l1 { display: block; color: var(--text); }
+    .hero h1 .l2 { display: block; background: linear-gradient(90deg, var(--amber) 0%, var(--pink) 48%, var(--purple) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .hero p { color: var(--muted); font-size: 17px; max-width: 460px; margin: 0 auto 48px; line-height: 1.65; }
+    .stats-pill { display: inline-flex; border: 1px solid var(--glass-border); border-radius: 16px; background: var(--glass); backdrop-filter: blur(12px); overflow: hidden; margin-bottom: 60px; }
+    .sp-item { padding: 18px 32px; text-align: center; border-right: 1px solid var(--glass-border); }
+    .sp-item:last-child { border-right: none; }
+    .sp-val { font-size: 28px; font-weight: 800; letter-spacing: -1px; display: block; }
+    .sp-lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.2px; margin-top: 2px; }
+
+    /* FILTERS */
+    .filter-bar { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 52px; padding: 0 36px; }
+    .fpill { padding: 8px 22px; border-radius: 20px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid var(--glass-border); background: var(--glass); color: var(--muted); font-family: 'Inter', sans-serif; transition: all 0.2s; backdrop-filter: blur(10px); }
+    .fpill:hover { color: var(--text); border-color: rgba(255,255,255,0.22); }
+    .fpill.active { color: var(--text); border-color: rgba(255,255,255,0.28); background: rgba(255,255,255,0.10); }
+    .search-wrap { display: flex; align-items: center; gap: 8px; padding: 8px 18px; border-radius: 20px; border: 1px solid var(--glass-border); background: var(--glass); backdrop-filter: blur(10px); min-width: 200px; }
+    .search-wrap input { background: transparent; border: none; outline: none; color: var(--text); font-size: 13px; font-family: 'Inter', sans-serif; width: 100%; }
+    .search-wrap input::placeholder { color: var(--muted2); }
+
+    /* GRID */
+    .cards-grid { padding: 0 36px 90px; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; max-width: 1380px; margin: 0 auto; }
+    .empty-msg { grid-column: 1/-1; text-align: center; padding: 80px; color: var(--muted); }
+
+    /* CARD — idêntico ao Koourse */
+    .pcard { background: #1a1d2e; border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; overflow: hidden; cursor: pointer; transition: all 0.25s; position: relative; display: flex; flex-direction: column; }
+    .pcard:hover { border-color: rgba(255,255,255,0.18); transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+
+    /* Imagem */
+    .card-img-wrap { position: relative; width: 100%; height: 220px; overflow: hidden; flex-shrink: 0; }
+    .card-thumb { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.3s; }
+    .pcard:hover .card-thumb { transform: scale(1.04); }
+    .card-thumb-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 52px; letter-spacing: 5px; color: rgba(255,255,255,0.07); font-weight: 800; }
+    .thumb-sports { background: linear-gradient(135deg, #0b1628 0%, #142140 60%, #1e2f5e 100%); }
+    .thumb-photo  { background: linear-gradient(135deg, #160a2a 0%, #2c1660 60%, #3d1880 100%); }
+    .thumb-video  { background: linear-gradient(135deg, #0a1a1a 0%, #0c3535 60%, #145858 100%); }
+    .thumb-text   { background: linear-gradient(135deg, #1a1408 0%, #2e2410 60%, #443618 100%); }
+    .thumb-design { background: linear-gradient(135deg, #0a0a1a 0%, #141428 60%, #1e1e3e 100%); }
+
+    /* Badge PROMPT top-left */
+    .card-badge { position: absolute; top: 12px; left: 12px; display: flex; align-items: center; gap: 5px; background: rgba(20,24,40,0.82); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; padding: 4px 10px; font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.85); letter-spacing: 0.8px; backdrop-filter: blur(8px); }
+    .card-badge svg { width: 12px; height: 12px; opacity: 0.7; }
+
+    /* Bookmark top-right */
+    .card-bookmark { position: absolute; top: 10px; right: 10px; width: 34px; height: 34px; border-radius: 10px; background: rgba(20,24,40,0.75); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(8px); transition: all 0.15s; }
+    .card-bookmark:hover { background: rgba(255,255,255,0.12); }
+    .card-bookmark svg { width: 16px; height: 16px; stroke: rgba(255,255,255,0.7); fill: none; }
+    .card-bookmark.saved svg { fill: var(--amber); stroke: var(--amber); }
+
+    /* Corpo */
+    .card-body { padding: 16px 18px 18px; display: flex; flex-direction: column; flex: 1; }
+
+    /* Avatar + autor */
+    .card-author-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .card-avatar { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, var(--green), var(--blue)); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #0a0a0b; flex-shrink: 0; }
+    .card-author-name { font-size: 13px; color: var(--muted); font-weight: 500; }
+
+    /* Título e desc */
+    .card-name { font-size: 18px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.3px; color: var(--text); line-height: 1.25; }
+    .card-desc { font-size: 14px; color: var(--muted); line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; flex: 1; }
+
+    /* Footer */
+    .card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.07); }
+    .card-stats { display: flex; align-items: center; gap: 14px; }
+    .card-stat { display: flex; align-items: center; gap: 5px; font-size: 13px; color: var(--muted); font-weight: 500; }
+    .card-stat svg { width: 15px; height: 15px; }
+    .card-stat.likes { cursor: pointer; transition: color 0.15s; }
+    .card-stat.likes:hover { color: #f87171; }
+    .card-stat.likes.liked { color: #f87171; }
+    .card-stat.likes.liked svg { fill: #f87171; stroke: #f87171; }
+    .card-date { font-size: 12px; color: var(--muted2); }
+    .tag-free { color: var(--green); font-weight: 700; font-size: 11px; }
+    .tag-pro  { color: var(--amber); font-weight: 700; font-size: 11px; }
+
+    /* MODAL */
+    .modal-overlay { display: none; position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.78); backdrop-filter: blur(14px); align-items: center; justify-content: center; padding: 20px; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: rgba(12,15,28,0.96); border: 1px solid var(--glass-border); border-radius: 26px; width: 100%; max-width: 600px; max-height: 88vh; overflow-y: auto; backdrop-filter: blur(30px); }
+    .modal-top { padding: 26px 28px 0; display: flex; align-items: flex-start; justify-content: space-between; }
+    .modal-close { width: 36px; height: 36px; border-radius: 11px; cursor: pointer; background: var(--glass); border: 1px solid var(--glass-border); color: var(--muted); font-size: 20px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; flex-shrink: 0; }
+    .modal-close:hover { color: var(--text); }
+    .modal-img { width: 100%; max-height: 260px; object-fit: cover; border-radius: 14px; margin-bottom: 18px; }
+    .modal-body { padding: 18px 28px 30px; }
+    .modal-cat { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+    .modal-title { font-size: 28px; font-weight: 800; letter-spacing: -0.8px; margin-bottom: 12px; }
+    .modal-desc { color: var(--muted); font-size: 14px; line-height: 1.65; margin-bottom: 22px; }
+    .prompt-box { background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 16px; padding: 18px; font-size: 13px; color: var(--muted); font-family: monospace; line-height: 1.7; margin-bottom: 16px; position: relative; }
+    .prompt-locked { filter: blur(5px); user-select: none; }
+    .lock-wall { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: rgba(8,11,20,0.8); border-radius: 16px; }
+    .lock-wall.show { display: flex; } .lock-wall p { font-size: 15px; font-weight: 700; } .lock-wall small { font-size: 12px; color: var(--muted); }
+    .copy-btn { display: flex; align-items: center; gap: 8px; padding: 11px 24px; border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.07); color: var(--text); font-family: 'Inter', sans-serif; transition: all 0.15s; }
+    .copy-btn:hover { background: rgba(255,255,255,0.13); } .copy-btn.ok { background: rgba(34,197,94,0.12); border-color: rgba(34,197,94,0.3); color: var(--green); }
+
+    /* ADMIN */
+    .admin-wrap { display: grid; grid-template-columns: 225px 1fr; min-height: calc(100vh - 62px); }
+    .admin-side { background: rgba(255,255,255,0.015); border-right: 1px solid var(--glass-border); padding: 28px 14px; position: sticky; top: 62px; height: calc(100vh - 62px); overflow-y: auto; }
+    .side-lbl { font-size: 10px; font-weight: 700; color: var(--muted2); text-transform: uppercase; letter-spacing: 2px; padding: 0 10px; margin-bottom: 10px; }
+    .sbtn { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 12px; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--muted); transition: all 0.15s; margin-bottom: 3px; }
+    .sbtn:hover { background: var(--glass); color: var(--text); }
+    .sbtn.active { background: rgba(255,255,255,0.07); color: var(--text); border: 1px solid var(--glass-border); }
+    .sbtn svg { width: 15px; height: 15px; flex-shrink: 0; }
+    .admin-main { padding: 36px; overflow-y: auto; }
+    .ah { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+    .ah h2 { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
+    .adm-stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 26px; }
+    .asc { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 18px; padding: 20px; backdrop-filter: blur(10px); }
+    .asc-l { font-size: 11px; color: var(--muted2); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+    .asc-v { font-size: 36px; font-weight: 800; letter-spacing: -1px; }
+    .asc-v.g { color: var(--green); } .asc-v.b { color: var(--blue); } .asc-v.a { color: var(--amber); } .asc-v.p { color: var(--pink); }
+
+    /* FORM */
+    .form-panel { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 20px; padding: 28px; margin-bottom: 20px; backdrop-filter: blur(10px); }
+    .form-panel h3 { font-size: 15px; font-weight: 700; margin-bottom: 22px; padding-bottom: 14px; border-bottom: 1px solid var(--glass-border); }
+    .fg { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+    .fg label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+    .fg input, .fg select, .fg textarea { background: rgba(255,255,255,0.04); border: 1px solid var(--glass-border); border-radius: 12px; padding: 11px 14px; color: var(--text); font-size: 13px; font-family: 'Inter', sans-serif; outline: none; transition: border-color 0.15s; }
+    .fg input:focus, .fg select:focus, .fg textarea:focus { border-color: rgba(255,255,255,0.3); }
+    .fg textarea { min-height: 110px; resize: vertical; }
+    .fg select option { background: #0d1020; }
+    .fg input[type="file"] { padding: 8px 14px; cursor: pointer; }
+    .form-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
+    .btn-pub { padding: 11px 28px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.09); color: var(--text); font-family: 'Inter', sans-serif; transition: all 0.15s; }
+    .btn-pub:hover { background: rgba(255,255,255,0.16); } .btn-pub:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-canc { padding: 11px 20px; border-radius: 12px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid var(--glass-border); background: transparent; color: var(--muted); font-family: 'Inter', sans-serif; transition: all 0.15s; }
+    .btn-canc:hover { color: var(--text); }
+
+    /* IMG PREVIEW */
+    .img-preview { width: 100%; max-height: 180px; object-fit: cover; border-radius: 12px; margin-top: 10px; display: none; border: 1px solid var(--glass-border); }
+    .img-preview.show { display: block; }
+
+    /* TABLE */
+    .tbl-panel { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 20px; overflow: hidden; backdrop-filter: blur(10px); }
+    .tbl-top { padding: 18px 22px; border-bottom: 1px solid var(--glass-border); }
+    .tbl-top h3 { font-size: 14px; font-weight: 700; }
+    table { width: 100%; border-collapse: collapse; }
+    th { padding: 11px 20px; font-size: 11px; font-weight: 700; color: var(--muted2); text-transform: uppercase; letter-spacing: 0.8px; text-align: left; background: rgba(255,255,255,0.015); }
+    td { padding: 13px 20px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+    tr:last-child td { border-bottom: none; } tr:hover td { background: rgba(255,255,255,0.02); }
+    .tbtn { padding: 4px 12px; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer; border: 1px solid var(--glass-border); background: transparent; color: var(--muted); font-family: 'Inter', sans-serif; transition: all 0.15s; }
+    .tbtn:hover { border-color: rgba(255,255,255,0.25); color: var(--text); }
+    .tbtn.del:hover { border-color: rgba(248,113,113,0.4); color: #f87171; }
+    .tbtn.edit:hover { border-color: rgba(96,165,250,0.4); color: var(--blue); }
+    .bf { color: var(--green); font-weight: 700; font-size: 12px; } .bp { color: var(--amber); font-weight: 700; font-size: 12px; }
+
+    /* TOGGLE */
+    .trow { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid var(--glass-border); }
+    .trow:last-child { border-bottom: none; }
+    .trow .tl { font-size: 13px; font-weight: 500; } .trow .ts { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .tsw { width: 40px; height: 22px; border-radius: 11px; background: rgba(255,255,255,0.1); cursor: pointer; position: relative; border: 1px solid var(--glass-border); flex-shrink: 0; transition: background 0.2s; }
+    .tsw.on { background: rgba(34,197,94,0.25); border-color: rgba(34,197,94,0.35); }
+    .tsw::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: rgba(255,255,255,0.6); transition: left 0.2s; }
+    .tsw.on::after { left: 20px; background: var(--green); }
+
+    /* TOAST */
+    .toast { position: fixed; bottom: 28px; right: 28px; z-index: 999; padding: 13px 22px; border-radius: 14px; font-size: 13px; font-weight: 600; transform: translateY(80px); opacity: 0; transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1); pointer-events: none; backdrop-filter: blur(20px); }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.success { background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.3); color: var(--green); }
+    .toast.error   { background: rgba(248,113,113,0.12); border: 1px solid rgba(248,113,113,0.3); color: #f87171; }
+    .toast.info    { background: var(--glass); border: 1px solid var(--glass-border); color: var(--text); }
+
+    @media (max-width: 768px) {
+      .hero h1 { letter-spacing: -2px; } .adm-stats { grid-template-columns: repeat(2,1fr); }
+      .admin-wrap { grid-template-columns: 1fr; } .admin-side { display: none; }
+      .form-row2 { grid-template-columns: 1fr; } .cards-grid { padding: 0 16px 60px; } nav { padding: 0 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg-blobs">
+  <div class="blob blob-1"></div><div class="blob blob-2"></div>
+  <div class="blob blob-3"></div><div class="blob blob-4"></div><div class="blob blob-5"></div>
+</div>
+
+<div class="app">
+  <nav>
+    <div class="logo" onclick="goHome()">Prompt<em>Max</em></div>
+    <div class="nav-tabs">
+      <button class="ntab active" id="nav-home" onclick="switchView('home')">Explorar</button>
+      <button class="ntab" id="nav-admin" onclick="switchView('admin')">Admin</button>
+    </div>
+    <div class="nav-right">
+      <button class="btn-ghost">Login</button>
+      <button class="btn-pill">Cadastrar</button>
+    </div>
+  </nav>
+
+  <!-- HOME -->
+  <div id="view-home" class="view active">
+    <div class="hero">
+      <div class="hero-video-wrap">
+        <video class="hero-video" id="hero-vid" autoplay muted loop playsinline></video>
+      </div>
+      <div class="hero-content">
+        <h1><span class="l1">A sua casa de</span><span class="l2">Prompts</span></h1>
+        <p>Prompts profissionais para Midjourney, Leonardo AI, ChatGPT e muito mais. Grátis pra começar.</p>
+        <div class="stats-pill">
+          <div class="sp-item"><span class="sp-val" id="hero-total">—</span><div class="sp-lbl">Prompts</div></div>
+          <div class="sp-item"><span class="sp-val" id="hero-views">—</span><div class="sp-lbl">Views</div></div>
+          <div class="sp-item"><span class="sp-val">100%</span><div class="sp-lbl">Grátis pra começar</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="filter-bar">
+      <button class="fpill active" onclick="setFilter(this,'all')">Todos</button>
+      <button class="fpill" onclick="setFilter(this,'sports')">Esportes</button>
+      <button class="fpill" onclick="setFilter(this,'photo')">Fotografia</button>
+      <button class="fpill" onclick="setFilter(this,'video')">Vídeo</button>
+      <button class="fpill" onclick="setFilter(this,'text')">Texto</button>
+      <button class="fpill" onclick="setFilter(this,'design')">Design</button>
+      <div class="search-wrap">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.38)" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input placeholder="Buscar prompts..." oninput="handleSearch(this.value)">
+      </div>
+    </div>
+    <div class="cards-grid" id="cards-grid"><div class="empty-msg">Carregando prompts...</div></div>
+  </div>
+
+  <!-- ADMIN -->
+  <div id="view-admin" class="view">
+    <div class="admin-wrap">
+      <div class="admin-side">
+        <div class="side-lbl" style="margin-bottom:12px">Painel</div>
+        <div class="sbtn active" onclick="showSec('s-dash',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</div>
+        <div class="sbtn" onclick="showSec('s-new',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Novo Prompt</div>
+        <div class="sbtn" onclick="showSec('s-manage',this);loadManage()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>Gerenciar</div>
+        <br>
+        <div class="side-lbl" style="margin-bottom:12px">Config</div>
+        <div class="sbtn" onclick="showSec('s-config',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>Configurações</div>
+      </div>
+
+      <div class="admin-main">
+
+        <!-- DASHBOARD -->
+        <div id="s-dash">
+          <div class="ah"><h2>Dashboard</h2><button class="btn-pill" onclick="showSec('s-new',document.querySelectorAll('.sbtn')[1])">+ Novo Prompt</button></div>
+          <div class="adm-stats">
+            <div class="asc"><div class="asc-l">Total Prompts</div><div class="asc-v g" id="st-total">—</div></div>
+            <div class="asc"><div class="asc-l">Gratuitos</div><div class="asc-v b" id="st-free">—</div></div>
+            <div class="asc"><div class="asc-l">Premium</div><div class="asc-v a" id="st-pro">—</div></div>
+            <div class="asc"><div class="asc-l">Views Totais</div><div class="asc-v p" id="st-views">—</div></div>
+          </div>
+          <div class="tbl-panel">
+            <div class="tbl-top"><h3>Prompts Recentes</h3></div>
+            <table><thead><tr><th>Título</th><th>Categoria</th><th>Tipo</th><th>Views</th><th>Ações</th></tr></thead><tbody id="dash-tbody"></tbody></table>
+          </div>
+        </div>
+
+        <!-- NOVO PROMPT -->
+        <div id="s-new" style="display:none">
+          <div class="ah"><h2>Novo Prompt</h2></div>
+          <div class="form-panel">
+            <h3>Informações</h3>
+            <div class="form-row2">
+              <div class="fg"><label>Título *</label><input id="f-title" placeholder="Ex: Atleta Futebol AAA"></div>
+              <div class="fg"><label>Categoria *</label><select id="f-cat"><option value="sports">Esportes</option><option value="photo">Fotografia</option><option value="video">Vídeo</option><option value="text">Texto</option><option value="design">Design</option></select></div>
+            </div>
+            <div class="fg"><label>Descrição</label><input id="f-desc" placeholder="Breve descrição do que o prompt faz..."></div>
+            <div class="fg"><label>Prompt Completo *</label><textarea id="f-prompt" placeholder="Cole aqui o prompt completo..."></textarea></div>
+            <div class="form-row2">
+              <div class="fg"><label>Ferramenta</label><select id="f-tool"><option>Midjourney</option><option>Leonardo AI</option><option>ChatGPT</option><option>Claude</option><option>Stable Diffusion</option><option>Sora</option><option>Gemini</option></select></div>
+              <div class="fg"><label>Tipo</label><select id="f-tipo"><option value="free">Gratuito</option><option value="pro">Premium (PRO)</option></select></div>
+            </div>
+            <div class="fg">
+              <label>Imagem do Card</label>
+              <input type="file" id="f-image" accept="image/*" onchange="previewImg(this,'f-preview')">
+              <img id="f-preview" class="img-preview" alt="Preview">
+            </div>
+            <div class="form-actions">
+              <button class="btn-canc" onclick="showSec('s-dash',document.querySelectorAll('.sbtn')[0])">Cancelar</button>
+              <button class="btn-pub" id="btn-pub" onclick="publishPrompt()">Publicar Prompt →</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- EDITAR PROMPT -->
+        <div id="s-edit" style="display:none">
+          <div class="ah"><h2>Editar Prompt</h2></div>
+          <div class="form-panel">
+            <h3>Editar Informações</h3>
+            <input type="hidden" id="e-id">
+            <div class="form-row2">
+              <div class="fg"><label>Título *</label><input id="e-title" placeholder="Título do prompt"></div>
+              <div class="fg"><label>Categoria *</label><select id="e-cat"><option value="sports">Esportes</option><option value="photo">Fotografia</option><option value="video">Vídeo</option><option value="text">Texto</option><option value="design">Design</option></select></div>
+            </div>
+            <div class="fg"><label>Descrição</label><input id="e-desc" placeholder="Breve descrição..."></div>
+            <div class="fg"><label>Prompt Completo *</label><textarea id="e-prompt" placeholder="Prompt completo..."></textarea></div>
+            <div class="form-row2">
+              <div class="fg"><label>Ferramenta</label><select id="e-tool"><option>Midjourney</option><option>Leonardo AI</option><option>ChatGPT</option><option>Claude</option><option>Stable Diffusion</option><option>Sora</option><option>Gemini</option></select></div>
+              <div class="fg"><label>Tipo</label><select id="e-tipo"><option value="free">Gratuito</option><option value="pro">Premium (PRO)</option></select></div>
+            </div>
+            <div class="fg">
+              <label>Imagem do Card</label>
+              <img id="e-current-img" class="img-preview" alt="Imagem atual">
+              <input type="file" id="e-image" accept="image/*" onchange="previewImg(this,'e-preview')" style="margin-top:10px">
+              <img id="e-preview" class="img-preview" alt="Nova imagem">
+            </div>
+            <div class="form-actions">
+              <button class="btn-canc" onclick="showSec('s-manage',document.querySelectorAll('.sbtn')[2]);loadManage()">Cancelar</button>
+              <button class="btn-pub" id="btn-edit" onclick="saveEdit()">Salvar Alterações →</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- GERENCIAR -->
+        <div id="s-manage" style="display:none">
+          <div class="ah"><h2>Gerenciar Prompts</h2></div>
+          <div class="tbl-panel">
+            <div class="tbl-top"><h3>Todos os Prompts</h3></div>
+            <table><thead><tr><th>Título</th><th>Categoria</th><th>Tipo</th><th>Views</th><th>Ações</th></tr></thead><tbody id="manage-tbody"></tbody></table>
+          </div>
+        </div>
+
+        <!-- CONFIG -->
+        <div id="s-config" style="display:none">
+          <div class="ah"><h2>Configurações</h2></div>
+          <div class="form-panel">
+            <h3>Visibilidade</h3>
+            <div class="trow"><div><div class="tl">Prompts premium visíveis</div><div class="ts">Visitantes veem o título mas não o conteúdo</div></div><button class="tsw on" onclick="this.classList.toggle('on')"></button></div>
+            <div class="trow"><div><div class="tl">Modo manutenção</div><div class="ts">Desativa acesso público temporariamente</div></div><button class="tsw" onclick="this.classList.toggle('on')"></button></div>
+            <div class="trow"><div><div class="tl">Mostrar views nos cards</div><div class="ts">Exibe contador de views publicamente</div></div><button class="tsw on" onclick="this.classList.toggle('on')"></button></div>
+          </div>
+          <div class="form-panel">
+            <h3>Identidade</h3>
+            <div class="fg"><label>Nome do site</label><input value="Prompt Max"></div>
+            <div class="fg"><label>Tagline</label><input value="A sua casa de Prompts"></div>
+            <div class="form-actions"><button class="btn-pub">Salvar</button></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal" onclick="maybeClose(event)">
+  <div class="modal">
+    <div class="modal-top">
+      <div><div class="modal-cat" id="m-cat"></div><div class="modal-title" id="m-title"></div></div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <img id="m-img" class="modal-img" alt="" style="display:none">
+      <p class="modal-desc" id="m-desc"></p>
+      <div style="position:relative">
+        <div class="prompt-box" id="m-prompt"></div>
+        <div class="lock-wall" id="m-lock"><span style="font-size:28px">🔒</span><p>Prompt Premium</p><small>Faça upgrade para acessar</small><button class="btn-pill" style="margin-top:8px">Ver planos</button></div>
+      </div>
+      <button class="copy-btn" id="copy-btn" onclick="copyPrompt()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copiar Prompt
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const CATS={sports:'Esportes',photo:'Fotografia',video:'Vídeo',text:'Texto',design:'Design'};
+const ICONS={sports:'✦',photo:'✿',video:'▶',text:'✎',design:'◈'};
+const THUMBS={sports:'thumb-sports',photo:'thumb-photo',video:'thumb-video',text:'thumb-text',design:'thumb-design'};
+let allPrompts=[],currentFilter='all',currentSearch='',currentPrompt=null;
+const likedSet=new Set(JSON.parse(localStorage.getItem('pm_likes')||'[]'));
+const savedSet=new Set(JSON.parse(localStorage.getItem('pm_saved')||'[]'));
+
+function toggleLike(id,e){
+  e.stopPropagation();
+  const el=document.getElementById('likes-'+id);
+  const card=e.currentTarget;
+  if(!el)return;
+  let val=parseInt(el.textContent)||0;
+  if(likedSet.has(id)){likedSet.delete(id);el.textContent=Math.max(0,val-1);card.classList.remove('liked');}
+  else{likedSet.add(id);el.textContent=val+1;card.classList.add('liked');}
+  localStorage.setItem('pm_likes',JSON.stringify([...likedSet]));
+}
+
+function toggleSave(id,e){
+  e.stopPropagation();
+  const btn=e.currentTarget;
+  if(savedSet.has(id)){savedSet.delete(id);btn.classList.remove('saved');}
+  else{savedSet.add(id);btn.classList.add('saved');}
+  localStorage.setItem('pm_saved',JSON.stringify([...savedSet]));
+}
+
+async function api(method,path,body){
+  const o={method,headers:{'Content-Type':'application/json'}};
+  if(body)o.body=JSON.stringify(body);
+  const r=await fetch('/api'+path,o);
+  if(!r.ok)throw new Error(await r.text());
+  return r.json();
+}
+
+async function apiForm(method,path,formData){
+  const r=await fetch('/api'+path,{method,body:formData});
+  if(!r.ok)throw new Error(await r.text());
+  return r.json();
+}
+
+async function loadPrompts(){
+  try{
+    allPrompts=await api('GET','/prompts');
+    renderGrid();
+    const views=allPrompts.reduce((a,p)=>a+(p.views||0),0);
+    animCount('hero-total',allPrompts.length);
+    animCount('hero-views',views>=1000?Math.round(views/1000):views,views>=1000?'k':'');
+  }catch(e){document.getElementById('cards-grid').innerHTML='<div class="empty-msg">Erro ao carregar. Verifique a conexão.</div>';}
+}
+
+function animCount(id,target,sfx=''){
+  const el=document.getElementById(id);let n=0;const s=Math.ceil(target/25)||1;
+  const t=setInterval(()=>{n=Math.min(n+s,target);el.textContent=n+sfx;if(n>=target)clearInterval(t);},50);
+}
+
+function renderGrid(){
+  const grid=document.getElementById('cards-grid');
+  const list=allPrompts.filter(p=>{
+    const mc=currentFilter==='all'||p.category===currentFilter;
+    const ms=!currentSearch||p.title.toLowerCase().includes(currentSearch)||(p.description||'').toLowerCase().includes(currentSearch);
+    return mc&&ms;
+  });
+  if(!list.length){grid.innerHTML='<div class="empty-msg">Nenhum prompt encontrado.</div>';return;}
+  grid.innerHTML=list.map(p=>{
+    const c=p.category||'sports';
+    const thumbClass='card-thumb-placeholder '+(THUMBS[c]||'');
+    const imgHtml=p.image_url
+      ? `<img class="card-thumb" src="${p.image_url}" alt=""
+           style="opacity:0;transition:opacity 0.3s;width:100%;height:100%;object-fit:cover;display:block;"
+           onload="this.style.opacity=1;this.nextElementSibling.style.display='none'"
+           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+         <div class="${thumbClass}" style="display:none">${ICONS[c]||'✦'}</div>`
+      : `<div class="${thumbClass}">${ICONS[c]||'✦'}</div>`;
+    const initials='PM';
+    const liked=likedSet.has(p.id);
+    const saved=savedSet.has(p.id);
+    const daysAgo=Math.floor((Date.now()-new Date(p.created_at))/(1000*60*60*24));
+    const dateStr=daysAgo===0?'hoje':daysAgo===1?'1 dia atrás':daysAgo+' dias atrás';
+    return `
+    <div class="pcard" onclick="openModal(${p.id})">
+      <div class="card-img-wrap">
+        ${imgHtml}
+        <div class="card-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><polyline points="8 21 12 17 16 21"/></svg>
+          PROMPT
+        </div>
+        <div class="card-bookmark ${saved?'saved':''}" onclick="toggleSave(${p.id},event)" title="Salvar">
+          <svg viewBox="0 0 24 24" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-author-row">
+          <div class="card-avatar">${initials}</div>
+          <span class="card-author-name">@promptmax</span>
+        </div>
+        <div class="card-name">${p.title}</div>
+        <div class="card-desc">${p.description||''}</div>
+        <div class="card-footer">
+          <div class="card-stats">
+            <span class="card-stat">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              ${fv(p.views)}
+            </span>
+            <span class="card-stat likes ${liked?'liked':''}" onclick="toggleLike(${p.id},event)">
+              <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              <span id="likes-${p.id}">${p.likes||0}</span>
+            </span>
+          </div>
+          <span class="card-date">${dateStr}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function fv(v){if(!v)return'0';return v>=1000?(v/1000).toFixed(1)+'k':v;}
+function setFilter(btn,cat){document.querySelectorAll('.fpill').forEach(b=>b.classList.remove('active'));btn.classList.add('active');currentFilter=cat;renderGrid();}
+function handleSearch(val){currentSearch=val.toLowerCase();renderGrid();}
+
+function previewImg(input,previewId){
+  const f=input.files[0];
+  const prev=document.getElementById(previewId);
+  if(f){const r=new FileReader();r.onload=e=>{prev.src=e.target.result;prev.classList.add('show');};r.readAsDataURL(f);}
+  else{prev.classList.remove('show');}
+}
+
+async function openModal(id){
+  try{
+    const p=await api('GET',`/prompts/${id}`);currentPrompt=p;
+    document.getElementById('m-cat').textContent=(CATS[p.category]||p.category).toUpperCase()+' · '+(p.tool||'');
+    document.getElementById('m-title').textContent=p.title;
+    document.getElementById('m-desc').textContent=p.description||'';
+    const mimg=document.getElementById('m-img');
+    if(p.image_url){mimg.src=p.image_url;mimg.style.display='block';}else{mimg.style.display='none';}
+    const pb=document.getElementById('m-prompt'),lk=document.getElementById('m-lock'),cb=document.getElementById('copy-btn');
+    pb.textContent=p.prompt_text;
+    if(p.tipo==='pro'){pb.classList.add('prompt-locked');lk.classList.add('show');cb.style.display='none';}
+    else{pb.classList.remove('prompt-locked');lk.classList.remove('show');cb.style.display='flex';cb.textContent='Copiar Prompt';cb.classList.remove('ok');}
+    document.getElementById('modal').classList.add('open');
+    const i=allPrompts.findIndex(x=>x.id===id);if(i>=0)allPrompts[i].views=(allPrompts[i].views||0)+1;
+  }catch(e){showToast('Erro ao abrir prompt','error');}
+}
+function closeModal(){document.getElementById('modal').classList.remove('open');}
+function maybeClose(e){if(e.target===document.getElementById('modal'))closeModal();}
+function copyPrompt(){
+  if(!currentPrompt)return;
+  navigator.clipboard.writeText(currentPrompt.prompt_text).then(()=>{
+    const b=document.getElementById('copy-btn');b.textContent='✓ Copiado!';b.classList.add('ok');
+    setTimeout(()=>{b.textContent='Copiar Prompt';b.classList.remove('ok');},2000);
+  });
+}
+
+function switchView(v){
+  document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.ntab').forEach(el=>el.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  document.getElementById('nav-'+v).classList.add('active');
+  if(v==='admin'){loadStats();loadDashTable();}
+}
+function goHome(){switchView('home');}
+
+function showSec(id,el){
+  document.querySelectorAll('.admin-main > div').forEach(d=>d.style.display='none');
+  document.getElementById(id).style.display='block';
+  document.querySelectorAll('.sbtn').forEach(b=>b.classList.remove('active'));
+  if(el)el.classList.add('active');
+  if(id==='s-dash'){loadStats();loadDashTable();}
+}
+
+async function loadStats(){
+  try{const s=await api('GET','/stats');document.getElementById('st-total').textContent=s.total;document.getElementById('st-free').textContent=s.free;document.getElementById('st-pro').textContent=s.pro;document.getElementById('st-views').textContent=s.views>=1000?(s.views/1000).toFixed(1)+'k':s.views;}catch(e){}
+}
+async function loadDashTable(){
+  const tb=document.getElementById('dash-tbody');
+  try{const list=await api('GET','/prompts');tb.innerHTML=list.slice(0,8).map(trow).join('')||noRows();}catch(e){tb.innerHTML=noRows('Erro ao carregar');}
+}
+async function loadManage(){
+  const tb=document.getElementById('manage-tbody');
+  try{const list=await api('GET','/prompts');tb.innerHTML=list.map(trow).join('')||noRows();}catch(e){}
+}
+function trow(p){return`<tr><td style="font-weight:600">${p.title}</td><td style="color:rgba(255,255,255,.45)">${CATS[p.category]||p.category}</td><td><span class="b${p.tipo==='pro'?'p':'f'}">${p.tipo==='pro'?'PRO':'GRÁTIS'}</span></td><td style="color:rgba(255,255,255,.45)">${fv(p.views)}</td><td><div style="display:flex;gap:6px"><button class="tbtn edit" onclick="openEdit(${p.id},event)">Editar</button><button class="tbtn del" onclick="delPrompt(${p.id},event)">Excluir</button></div></td></tr>`;}
+function noRows(m='Nenhum prompt ainda.'){return`<tr><td colspan="5" style="text-align:center;color:rgba(255,255,255,.3);padding:28px">${m}</td></tr>`;}
+
+async function openEdit(id,e){
+  e.stopPropagation();
+  try{
+    const p=await api('GET',`/prompts/${id}`);
+    document.getElementById('e-id').value=p.id;
+    document.getElementById('e-title').value=p.title;
+    document.getElementById('e-desc').value=p.description||'';
+    document.getElementById('e-prompt').value=p.prompt_text;
+    document.getElementById('e-cat').value=p.category;
+    document.getElementById('e-tool').value=p.tool||'Midjourney';
+    document.getElementById('e-tipo').value=p.tipo||'free';
+    const curImg=document.getElementById('e-current-img');
+    if(p.image_url){curImg.src=p.image_url;curImg.classList.add('show');}else{curImg.classList.remove('show');}
+    document.getElementById('e-preview').classList.remove('show');
+    document.getElementById('e-image').value='';
+    showSec('s-edit',null);
+    document.querySelectorAll('.sbtn').forEach(b=>b.classList.remove('active'));
+  }catch(ex){showToast('Erro ao carregar prompt','error');}
+}
+
+async function saveEdit(){
+  const id=document.getElementById('e-id').value;
+  const title=document.getElementById('e-title').value.trim();
+  const prompt_text=document.getElementById('e-prompt').value.trim();
+  if(!title){showToast('Preencha o título!','error');return;}
+  if(!prompt_text){showToast('Preencha o prompt!','error');return;}
+  const btn=document.getElementById('btn-edit');btn.disabled=true;btn.textContent='Salvando...';
+  try{
+    const fd=new FormData();
+    fd.append('title',title);
+    fd.append('description',document.getElementById('e-desc').value.trim());
+    fd.append('prompt_text',prompt_text);
+    fd.append('category',document.getElementById('e-cat').value);
+    fd.append('tool',document.getElementById('e-tool').value);
+    fd.append('tipo',document.getElementById('e-tipo').value);
+    fd.append('keep_image','true');
+    const imgFile=document.getElementById('e-image').files[0];
+    if(imgFile)fd.append('image',imgFile);
+    await apiForm('PUT',`/prompts/${id}`,fd);
+    showToast('Prompt atualizado!','success');
+    loadPrompts();
+    showSec('s-manage',document.querySelectorAll('.sbtn')[2]);
+    loadManage();
+  }catch(ex){showToast('Erro ao salvar.','error');}
+  finally{btn.disabled=false;btn.textContent='Salvar Alterações →';}
+}
+
+async function publishPrompt(){
+  const title=document.getElementById('f-title').value.trim();
+  const prompt_text=document.getElementById('f-prompt').value.trim();
+  if(!title){showToast('Preencha o título!','error');return;}
+  if(!prompt_text){showToast('Preencha o prompt!','error');return;}
+  const btn=document.getElementById('btn-pub');btn.disabled=true;btn.textContent='Publicando...';
+  try{
+    const fd=new FormData();
+    fd.append('title',title);
+    fd.append('description',document.getElementById('f-desc').value.trim());
+    fd.append('prompt_text',prompt_text);
+    fd.append('category',document.getElementById('f-cat').value);
+    fd.append('tool',document.getElementById('f-tool').value);
+    fd.append('tipo',document.getElementById('f-tipo').value);
+    const imgFile=document.getElementById('f-image').files[0];
+    if(imgFile)fd.append('image',imgFile);
+    await apiForm('POST','/prompts',fd);
+    ['f-title','f-desc','f-prompt'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('f-image').value='';
+    document.getElementById('f-preview').classList.remove('show');
+    showToast('Prompt publicado!','success');
+    loadPrompts();
+    showSec('s-dash',document.querySelectorAll('.sbtn')[0]);
+  }catch(ex){showToast('Erro ao publicar.','error');}
+  finally{btn.disabled=false;btn.textContent='Publicar Prompt →';}
+}
+
+async function delPrompt(id,e){
+  e.stopPropagation();
+  if(!confirm('Excluir este prompt permanentemente?'))return;
+  try{await api('DELETE',`/prompts/${id}`);showToast('Excluído.','info');loadPrompts();loadDashTable();loadManage();}
+  catch(e){showToast('Erro ao excluir.','error');}
+}
+
+let toastTimer;
+function showToast(msg,type='success'){const t=document.getElementById('toast');t.textContent=msg;t.className=`toast ${type} show`;clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),3000);}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+loadPrompts();
+
+// HLS video background
+(function(){
+  const vid = document.getElementById('hero-vid');
+  const src = 'https://stream.mux.com/4IMYGcL01xjs7ek5ANO17JC4VQVUTsojZlnw4fXzwSxc.m3u8';
+  if (!vid) return;
+
+  vid.muted = true;
+  vid.loop = true;
+  vid.playsInline = true;
+
+  function forcePlay() {
+    vid.play().catch(() => {});
+  }
+
+  if (vid.canPlayType('application/vnd.apple.mpegurl')) {
+    vid.src = src;
+    vid.addEventListener('loadedmetadata', forcePlay);
+    vid.addEventListener('canplay', forcePlay);
+  } else {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/hls.js@latest/dist/hls.min.js';
+    s.onload = function() {
+      if (Hls.isSupported()) {
+        const hls = new Hls({ enableWorker: false });
+        hls.loadSource(src);
+        hls.attachMedia(vid);
+        hls.on(Hls.Events.MANIFEST_PARSED, forcePlay);
+        hls.on(Hls.Events.BUFFER_APPENDED, forcePlay);
+        vid.addEventListener('canplay', forcePlay);
+      }
+    };
+    document.head.appendChild(s);
+  }
+
+  // fallback: tenta dar play quando a página ficar visível
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && vid.paused) forcePlay();
+  });
+})();
+</script>
+</body>
+</html>
