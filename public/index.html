@@ -69,41 +69,58 @@
     .search-wrap input::placeholder { color: var(--muted2); }
 
     /* GRID */
-    .cards-grid { padding: 0 36px 90px; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; max-width: 1380px; margin: 0 auto; }
+    .cards-grid { padding: 0 36px 90px; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; max-width: 1380px; margin: 0 auto; }
     .empty-msg { grid-column: 1/-1; text-align: center; padding: 80px; color: var(--muted); }
 
-    /* CARD */
-    .pcard { background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 22px; overflow: hidden; cursor: pointer; transition: all 0.25s; backdrop-filter: blur(14px); position: relative; }
-    .pcard:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.18); transform: translateY(-5px); }
-    .card-thumb { width: 100%; height: 160px; object-fit: cover; display: block; }
-    .card-thumb-placeholder { width: 100%; height: 160px; display: flex; align-items: center; justify-content: center; font-size: 48px; letter-spacing: 5px; color: rgba(255,255,255,0.07); font-weight: 800; }
+    /* CARD — idêntico ao Koourse */
+    .pcard { background: #1a1d2e; border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; overflow: hidden; cursor: pointer; transition: all 0.25s; position: relative; display: flex; flex-direction: column; }
+    .pcard:hover { border-color: rgba(255,255,255,0.18); transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+
+    /* Imagem */
+    .card-img-wrap { position: relative; width: 100%; height: 220px; overflow: hidden; flex-shrink: 0; }
+    .card-thumb { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.3s; }
+    .pcard:hover .card-thumb { transform: scale(1.04); }
+    .card-thumb-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 52px; letter-spacing: 5px; color: rgba(255,255,255,0.07); font-weight: 800; }
     .thumb-sports { background: linear-gradient(135deg, #0b1628 0%, #142140 60%, #1e2f5e 100%); }
     .thumb-photo  { background: linear-gradient(135deg, #160a2a 0%, #2c1660 60%, #3d1880 100%); }
     .thumb-video  { background: linear-gradient(135deg, #0a1a1a 0%, #0c3535 60%, #145858 100%); }
     .thumb-text   { background: linear-gradient(135deg, #1a1408 0%, #2e2410 60%, #443618 100%); }
     .thumb-design { background: linear-gradient(135deg, #0a0a1a 0%, #141428 60%, #1e1e3e 100%); }
 
-    .card-body { padding: 18px 20px 20px; }
-    .card-icon { width: 40px; height: 40px; border-radius: 11px; display: flex; align-items: center; justify-content: center; font-size: 18px; margin-bottom: 12px; }
-    .ci-sports { background: rgba(34,197,94,0.15); } .ci-photo { background: rgba(232,121,249,0.15); }
-    .ci-video  { background: rgba(96,165,250,0.15); } .ci-text  { background: rgba(245,158,11,0.15); }
-    .ci-design { background: rgba(167,139,250,0.15); }
-    .card-name { font-size: 15px; font-weight: 700; margin-bottom: 7px; letter-spacing: -0.3px; }
-    .card-name em { font-style: normal; }
-    .cn-sports em { color: var(--green); } .cn-photo em { color: var(--pink); }
-    .cn-video  em { color: var(--blue); } .cn-text  em { color: var(--amber); }
-    .cn-design em { color: var(--purple); }
-    .card-desc { font-size: 12px; color: var(--muted); line-height: 1.6; margin-bottom: 18px; min-height: 38px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-    .card-cta { display: inline-flex; align-items: center; gap: 8px; padding: 8px 18px; border-radius: 11px; font-size: 13px; font-weight: 700; border: none; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s; color: var(--text); letter-spacing: 0.3px; }
-    .cta-sports { background: rgba(34,197,94,0.15); }  .cta-sports:hover { background: rgba(34,197,94,0.28); }
-    .cta-photo  { background: rgba(232,121,249,0.15); } .cta-photo:hover  { background: rgba(232,121,249,0.28); }
-    .cta-video  { background: rgba(96,165,250,0.15); }  .cta-video:hover  { background: rgba(96,165,250,0.28); }
-    .cta-text   { background: rgba(245,158,11,0.15); }  .cta-text:hover   { background: rgba(245,158,11,0.28); }
-    .cta-design { background: rgba(167,139,250,0.15); } .cta-design:hover { background: rgba(167,139,250,0.28); }
-    .card-meta { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--glass-border); font-size: 11px; color: var(--muted2); }
-    .tag-free { color: var(--green); font-weight: 700; } .tag-pro { color: var(--amber); font-weight: 700; }
-    .pro-flag { position: absolute; top: 14px; right: 14px; background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.25); border-radius: 8px; padding: 3px 10px; font-size: 10px; font-weight: 700; color: var(--amber); letter-spacing: 0.8px; }
-    .new-flag { position: absolute; top: 14px; left: 14px; background: rgba(167,139,250,0.12); border: 1px solid rgba(167,139,250,0.25); border-radius: 8px; padding: 3px 10px; font-size: 10px; font-weight: 700; color: var(--purple); letter-spacing: 0.8px; }
+    /* Badge PROMPT top-left */
+    .card-badge { position: absolute; top: 12px; left: 12px; display: flex; align-items: center; gap: 5px; background: rgba(20,24,40,0.82); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; padding: 4px 10px; font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.85); letter-spacing: 0.8px; backdrop-filter: blur(8px); }
+    .card-badge svg { width: 12px; height: 12px; opacity: 0.7; }
+
+    /* Bookmark top-right */
+    .card-bookmark { position: absolute; top: 10px; right: 10px; width: 34px; height: 34px; border-radius: 10px; background: rgba(20,24,40,0.75); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(8px); transition: all 0.15s; }
+    .card-bookmark:hover { background: rgba(255,255,255,0.12); }
+    .card-bookmark svg { width: 16px; height: 16px; stroke: rgba(255,255,255,0.7); fill: none; }
+    .card-bookmark.saved svg { fill: var(--amber); stroke: var(--amber); }
+
+    /* Corpo */
+    .card-body { padding: 16px 18px 18px; display: flex; flex-direction: column; flex: 1; }
+
+    /* Avatar + autor */
+    .card-author-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .card-avatar { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, var(--green), var(--blue)); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #0a0a0b; flex-shrink: 0; }
+    .card-author-name { font-size: 13px; color: var(--muted); font-weight: 500; }
+
+    /* Título e desc */
+    .card-name { font-size: 18px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.3px; color: var(--text); line-height: 1.25; }
+    .card-desc { font-size: 14px; color: var(--muted); line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; flex: 1; }
+
+    /* Footer */
+    .card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.07); }
+    .card-stats { display: flex; align-items: center; gap: 14px; }
+    .card-stat { display: flex; align-items: center; gap: 5px; font-size: 13px; color: var(--muted); font-weight: 500; }
+    .card-stat svg { width: 15px; height: 15px; }
+    .card-stat.likes { cursor: pointer; transition: color 0.15s; }
+    .card-stat.likes:hover { color: #f87171; }
+    .card-stat.likes.liked { color: #f87171; }
+    .card-stat.likes.liked svg { fill: #f87171; stroke: #f87171; }
+    .card-date { font-size: 12px; color: var(--muted2); }
+    .tag-free { color: var(--green); font-weight: 700; font-size: 11px; }
+    .tag-pro  { color: var(--amber); font-weight: 700; font-size: 11px; }
 
     /* MODAL */
     .modal-overlay { display: none; position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.78); backdrop-filter: blur(14px); align-items: center; justify-content: center; padding: 20px; }
@@ -396,6 +413,27 @@ const CATS={sports:'Esportes',photo:'Fotografia',video:'Vídeo',text:'Texto',des
 const ICONS={sports:'✦',photo:'✿',video:'▶',text:'✎',design:'◈'};
 const THUMBS={sports:'thumb-sports',photo:'thumb-photo',video:'thumb-video',text:'thumb-text',design:'thumb-design'};
 let allPrompts=[],currentFilter='all',currentSearch='',currentPrompt=null;
+const likedSet=new Set(JSON.parse(localStorage.getItem('pm_likes')||'[]'));
+const savedSet=new Set(JSON.parse(localStorage.getItem('pm_saved')||'[]'));
+
+function toggleLike(id,e){
+  e.stopPropagation();
+  const el=document.getElementById('likes-'+id);
+  const card=e.currentTarget;
+  if(!el)return;
+  let val=parseInt(el.textContent)||0;
+  if(likedSet.has(id)){likedSet.delete(id);el.textContent=Math.max(0,val-1);card.classList.remove('liked');}
+  else{likedSet.add(id);el.textContent=val+1;card.classList.add('liked');}
+  localStorage.setItem('pm_likes',JSON.stringify([...likedSet]));
+}
+
+function toggleSave(id,e){
+  e.stopPropagation();
+  const btn=e.currentTarget;
+  if(savedSet.has(id)){savedSet.delete(id);btn.classList.remove('saved');}
+  else{savedSet.add(id);btn.classList.add('saved');}
+  localStorage.setItem('pm_saved',JSON.stringify([...savedSet]));
+}
 
 async function api(method,path,body){
   const o={method,headers:{'Content-Type':'application/json'}};
@@ -436,22 +474,45 @@ function renderGrid(){
   if(!list.length){grid.innerHTML='<div class="empty-msg">Nenhum prompt encontrado.</div>';return;}
   grid.innerHTML=list.map(p=>{
     const c=p.category||'sports';
-    const thumb=p.image_url
-      ? `<img class="card-thumb" src="${p.image_url}" alt="${p.title}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`+`<div class="card-thumb-placeholder ${THUMBS[c]||''}" style="display:none">${ICONS[c]||'✦'}</div>`
+    const imgHtml=p.image_url
+      ? `<img class="card-thumb" src="${p.image_url}" alt="${p.title}" onerror="this.outerHTML='<div class=\"card-thumb-placeholder ${THUMBS[c]||''}\">'+ICONS[c]+'</div>'">`
       : `<div class="card-thumb-placeholder ${THUMBS[c]||''}">${ICONS[c]||'✦'}</div>`;
+    const initials='PM';
+    const liked=likedSet.has(p.id);
+    const saved=savedSet.has(p.id);
+    const daysAgo=Math.floor((Date.now()-new Date(p.created_at))/(1000*60*60*24));
+    const dateStr=daysAgo===0?'hoje':daysAgo===1?'1 dia atrás':daysAgo+' dias atrás';
     return `
     <div class="pcard" onclick="openModal(${p.id})">
-      ${p.tipo==='pro'?'<div class="pro-flag">PRO</div>':''}
-      ${p.is_new?'<div class="new-flag">NOVO</div>':''}
-      ${thumb}
+      <div class="card-img-wrap">
+        ${imgHtml}
+        <div class="card-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><polyline points="8 21 12 17 16 21"/></svg>
+          PROMPT
+        </div>
+        <div class="card-bookmark ${saved?'saved':''}" onclick="toggleSave(${p.id},event)" title="Salvar">
+          <svg viewBox="0 0 24 24" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        </div>
+      </div>
       <div class="card-body">
-        <div class="card-icon ci-${c}">${ICONS[c]||'✦'}</div>
-        <div class="card-name cn-${c}">${p.title.replace(/(STUDIO|Studio)/g,'<em>$1</em>')}</div>
+        <div class="card-author-row">
+          <div class="card-avatar">${initials}</div>
+          <span class="card-author-name">@promptmax</span>
+        </div>
+        <div class="card-name">${p.title}</div>
         <div class="card-desc">${p.description||''}</div>
-        <button class="card-cta cta-${c}">→ ACESSAR</button>
-        <div class="card-meta">
-          <span class="${p.tipo==='pro'?'tag-pro':'tag-free'}">${p.tipo==='pro'?'PRO':'GRÁTIS'}</span>
-          <span>${fv(p.views)} views · ${p.tool||''}</span>
+        <div class="card-footer">
+          <div class="card-stats">
+            <span class="card-stat">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              ${fv(p.views)}
+            </span>
+            <span class="card-stat likes ${liked?'liked':''}" onclick="toggleLike(${p.id},event)">
+              <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              <span id="likes-${p.id}">${p.likes||0}</span>
+            </span>
+          </div>
+          <span class="card-date">${dateStr}</span>
         </div>
       </div>
     </div>`;
@@ -617,20 +678,39 @@ loadPrompts();
   const vid = document.getElementById('hero-vid');
   const src = 'https://stream.mux.com/4IMYGcL01xjs7ek5ANO17JC4VQVUTsojZlnw4fXzwSxc.m3u8';
   if (!vid) return;
+
+  vid.muted = true;
+  vid.loop = true;
+  vid.playsInline = true;
+
+  function forcePlay() {
+    vid.play().catch(() => {});
+  }
+
   if (vid.canPlayType('application/vnd.apple.mpegurl')) {
     vid.src = src;
+    vid.addEventListener('loadedmetadata', forcePlay);
+    vid.addEventListener('canplay', forcePlay);
   } else {
     const s = document.createElement('script');
     s.src = 'https://cdn.jsdelivr.net/npm/hls.js@latest/dist/hls.min.js';
     s.onload = function() {
       if (Hls.isSupported()) {
-        const hls = new Hls();
+        const hls = new Hls({ enableWorker: false });
         hls.loadSource(src);
         hls.attachMedia(vid);
+        hls.on(Hls.Events.MANIFEST_PARSED, forcePlay);
+        hls.on(Hls.Events.BUFFER_APPENDED, forcePlay);
+        vid.addEventListener('canplay', forcePlay);
       }
     };
     document.head.appendChild(s);
   }
+
+  // fallback: tenta dar play quando a página ficar visível
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && vid.paused) forcePlay();
+  });
 })();
 </script>
 </body>
