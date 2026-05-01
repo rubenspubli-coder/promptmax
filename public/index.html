@@ -59,7 +59,8 @@
     .hero-cta { display: inline-flex; align-items: center; gap: 10px; padding: 14px 32px; border-radius: 50px; font-size: 15px; font-weight: 700; cursor: pointer; border: none; background: linear-gradient(90deg, var(--amber), var(--pink)); color: #08080a; font-family: 'Inter', sans-serif; transition: all 0.2s; margin-bottom: 48px; letter-spacing: 0.3px; box-shadow: 0 8px 32px rgba(232,121,249,0.25); }
     .hero-cta:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(232,121,249,0.4); opacity: 0.92; }
     .hero-cta svg { width: 16px; height: 16px; }
-    .stats-pill { display: inline-flex; border: 1px solid var(--glass-border); border-radius: 16px; background: var(--glass); backdrop-filter: blur(12px); overflow: hidden; margin-bottom: 60px; }
+    .hero-bottom { display: flex; flex-direction: column; align-items: center; gap: 24px; margin-bottom: 60px; }
+    .stats-pill { display: inline-flex; border: 1px solid var(--glass-border); border-radius: 16px; background: var(--glass); backdrop-filter: blur(12px); overflow: hidden; }
     .sp-item { padding: 18px 32px; text-align: center; border-right: 1px solid var(--glass-border); }
     .sp-item:last-child { border-right: none; }
     .sp-val { font-size: 28px; font-weight: 800; letter-spacing: -1px; display: block; }
@@ -211,6 +212,35 @@
     .tsw.on::after { left: 20px; background: var(--green); }
 
     /* TOAST */
+    /* SUBSCRIPTION MODAL */
+    .sub-overlay { display: none; position: fixed; inset: 0; z-index: 700; background: rgba(0,0,0,0.88); backdrop-filter: blur(16px); align-items: center; justify-content: center; padding: 20px; }
+    .sub-overlay.open { display: flex; }
+    .sub-modal { background: rgba(10,12,24,0.98); border: 1px solid var(--glass-border); border-radius: 28px; width: 100%; max-width: 560px; overflow: hidden; backdrop-filter: blur(30px); }
+    .sub-top { padding: 36px 36px 0; text-align: center; position: relative; }
+    .sub-close { position: absolute; top: 20px; right: 20px; width: 34px; height: 34px; border-radius: 10px; cursor: pointer; background: var(--glass); border: 1px solid var(--glass-border); color: var(--muted); font-size: 18px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+    .sub-close:hover { color: var(--text); }
+    .sub-badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px; border-radius: 20px; border: 1px solid rgba(232,121,249,0.3); background: rgba(232,121,249,0.08); font-size: 11px; font-weight: 700; color: var(--pink); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 18px; }
+    .sub-title { font-family: 'Abril Fatface', serif; font-style: italic; font-size: clamp(26px, 5vw, 36px); line-height: 1.2; margin-bottom: 10px; background: linear-gradient(90deg, var(--text) 0%, var(--pink) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .sub-sub { font-size: 14px; color: var(--muted); margin-bottom: 32px; }
+    .sub-plans { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; padding: 0 36px; margin-bottom: 28px; }
+    .plan-card { border: 1px solid var(--glass-border); border-radius: 18px; padding: 22px 16px; text-align: center; cursor: pointer; transition: all 0.2s; background: rgba(255,255,255,0.03); position: relative; }
+    .plan-card:hover { border-color: rgba(255,255,255,0.22); background: rgba(255,255,255,0.06); transform: translateY(-3px); }
+    .plan-card.popular { border-color: rgba(232,121,249,0.4); background: rgba(232,121,249,0.06); }
+    .plan-popular-badge { position: absolute; top: -11px; left: 50%; transform: translateX(-50%); background: linear-gradient(90deg, var(--amber), var(--pink)); color: #08080a; font-size: 10px; font-weight: 800; padding: 3px 12px; border-radius: 20px; white-space: nowrap; letter-spacing: 0.5px; }
+    .plan-name { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 12px; }
+    .plan-price { font-size: 28px; font-weight: 800; letter-spacing: -1px; margin-bottom: 4px; }
+    .plan-price span { font-size: 14px; font-weight: 500; color: var(--muted); letter-spacing: 0; }
+    .plan-desc { font-size: 12px; color: var(--muted2); line-height: 1.5; margin-bottom: 16px; }
+    .plan-perks { list-style: none; text-align: left; margin-bottom: 18px; display: flex; flex-direction: column; gap: 6px; }
+    .plan-perks li { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+    .plan-perks li::before { content: '✓'; color: var(--green); font-weight: 700; flex-shrink: 0; }
+    .plan-btn { width: 100%; padding: 10px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.07); color: var(--text); font-family: 'Inter', sans-serif; transition: all 0.15s; }
+    .plan-btn:hover { background: rgba(255,255,255,0.15); }
+    .plan-card.popular .plan-btn { background: linear-gradient(90deg, var(--amber), var(--pink)); border: none; color: #08080a; }
+    .plan-card.popular .plan-btn:hover { opacity: 0.88; }
+    .sub-footer { padding: 0 36px 28px; text-align: center; font-size: 12px; color: var(--muted2); }
+    .sub-footer a { color: var(--muted); cursor: pointer; }
+
     /* AUTH MODAL */
     .auth-overlay { display: none; position: fixed; inset: 0; z-index: 600; background: rgba(0,0,0,0.82); backdrop-filter: blur(14px); align-items: center; justify-content: center; padding: 20px; }
     .auth-overlay.open { display: flex; }
@@ -256,7 +286,12 @@
       .filter-bar { padding: 0 16px; justify-content: flex-start; overflow-x: auto; flex-wrap: nowrap; }
       .filter-bar::-webkit-scrollbar { display: none; }
       .search-wrap { min-width: 160px; flex-shrink: 0; } .adm-stats { grid-template-columns: repeat(2,1fr); }
-      .admin-wrap { grid-template-columns: 1fr; } .admin-side { display: none; }
+      .admin-wrap { grid-template-columns: 1fr; }
+      .sub-plans { grid-template-columns: 1fr; }
+      .sub-modal { border-radius: 20px; max-height: 90vh; overflow-y: auto; }
+      .sub-top { padding: 28px 20px 0; }
+      .sub-plans { padding: 0 20px; }
+      .sub-footer { padding: 0 20px 24px; } .admin-side { display: none; }
       .form-row2 { grid-template-columns: 1fr; } .cards-grid { padding: 0 16px 60px; } nav { padding: 0 16px; }
     }
   </style>
@@ -272,8 +307,7 @@
   <nav>
     <div class="logo" onclick="goHome()">Prompt<em>House</em></div>
     <div class="nav-tabs">
-      <button class="ntab active" id="nav-home" onclick="switchView('home')">Explorar</button>
-      <button class="ntab" id="nav-admin" onclick="switchView('admin')">Admin</button>
+      <button class="ntab active" id="nav-admin" onclick="switchView('admin')">Admin</button>
     </div>
     <div class="nav-right">
       <button class="btn-icon" title="Login" onclick="openAuthModal('login')">
@@ -294,15 +328,17 @@
       <div class="hero-content">
         <h1><span class="l1">Dê asas a sua</span><span class="l2">imaginação</span></h1>
         <p>Prompts profissionais para Gemini, Nano Banana e GPT2. Grátis pra começar.</p>
-        <div class="stats-pill">
-          <div class="sp-item"><span class="sp-val" id="hero-total">—</span><div class="sp-lbl">Prompts</div></div>
-          <div class="sp-item"><span class="sp-val" id="hero-views">—</span><div class="sp-lbl">Views</div></div>
-          <div class="sp-item"><span class="sp-val">100%</span><div class="sp-lbl">Grátis pra começar</div></div>
+        <div class="hero-bottom">
+          <div class="stats-pill">
+            <div class="sp-item"><span class="sp-val" id="hero-total">—</span><div class="sp-lbl">Prompts</div></div>
+            <div class="sp-item"><span class="sp-val" id="hero-views">—</span><div class="sp-lbl">Views</div></div>
+            <div class="sp-item"><span class="sp-val">100%</span><div class="sp-lbl">Grátis pra começar</div></div>
+          </div>
+          <button class="hero-cta" onclick="openAuthModal('register')">
+            Comece aqui
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </button>
         </div>
-        <button class="hero-cta" onclick="openAuthModal('register')">
-          Comece aqui
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-        </button>
       </div>
     </div>
     <div class="filter-bar">
@@ -452,6 +488,59 @@
         </div>
 
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- SUBSCRIPTION MODAL -->
+<div class="sub-overlay" id="sub-modal" onclick="maybeCloseSub(event)">
+  <div class="sub-modal">
+    <div class="sub-top">
+      <button class="sub-close" onclick="closeSubModal()">×</button>
+      <div class="sub-badge">✦ Acesso Premium</div>
+      <div class="sub-title">Desbloqueie a biblioteca completa</div>
+      <p class="sub-sub">Escolha uma opção abaixo para liberar o acesso agora.</p>
+    </div>
+    <div class="sub-plans">
+      <div class="plan-card" onclick="selectPlan('semestral')">
+        <div class="plan-name">Semestral</div>
+        <div class="plan-price">R$47<span>/sem</span></div>
+        <p class="plan-desc">6 meses de acesso completo</p>
+        <ul class="plan-perks">
+          <li>Todos os prompts</li>
+          <li>Novidades mensais</li>
+          <li>Suporte prioritário</li>
+        </ul>
+        <button class="plan-btn">Assinar agora</button>
+      </div>
+      <div class="plan-card popular" onclick="selectPlan('anual')">
+        <div class="plan-popular-badge">MAIS POPULAR</div>
+        <div class="plan-name">Anual</div>
+        <div class="plan-price">R$77<span>/ano</span></div>
+        <p class="plan-desc">12 meses + 2 meses grátis</p>
+        <ul class="plan-perks">
+          <li>Todos os prompts</li>
+          <li>Novidades mensais</li>
+          <li>Suporte prioritário</li>
+          <li>Downloads ilimitados</li>
+        </ul>
+        <button class="plan-btn">Assinar agora</button>
+      </div>
+      <div class="plan-card" onclick="selectPlan('vitalicio')">
+        <div class="plan-name">Vitalício</div>
+        <div class="plan-price">R$197<span> único</span></div>
+        <p class="plan-desc">Acesso para sempre, pague uma vez</p>
+        <ul class="plan-perks">
+          <li>Todos os prompts</li>
+          <li>Atualizações vitalícias</li>
+          <li>Suporte VIP</li>
+          <li>Acesso antecipado</li>
+        </ul>
+        <button class="plan-btn">Assinar agora</button>
+      </div>
+    </div>
+    <div class="sub-footer">
+      🔒 Pagamento seguro · Cancele quando quiser · <a onclick="closeSubModal()">Continuar grátis</a>
     </div>
   </div>
 </div>
@@ -794,6 +883,12 @@ document.addEventListener('keydown',e=>{
 });
 loadPrompts();
 
+// ── SUBSCRIPTION MODAL ───────────────────────────────────────
+function openSubModal() { document.getElementById('sub-modal').classList.add('open'); }
+function closeSubModal() { document.getElementById('sub-modal').classList.remove('open'); }
+function maybeCloseSub(e) { if(e.target===document.getElementById('sub-modal')) closeSubModal(); }
+function selectPlan(plan) { showToast('Redirecionando para pagamento...', 'info'); closeSubModal(); }
+
 // ── AUTH MODAL ───────────────────────────────────────────────
 let users = JSON.parse(localStorage.getItem('ph_users') || '[]');
 
@@ -869,41 +964,17 @@ function loadContacts() {
   }).join('');
 }
 
-// HLS video background
+// Video background — MP4 direto
 (function(){
   const vid = document.getElementById('hero-vid');
-  const src = 'https://stream.mux.com/NcU3HlHeF7CUL86azTTzpy3Tlb00d6iF3BmCdFslMJYM.m3u8';
   if (!vid) return;
-
+  vid.src = 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260416_101255_3099d3e4-d0cf-4e59-9666-97fbf521ac71.mp4';
   vid.muted = true;
   vid.loop = true;
   vid.playsInline = true;
-
-  function forcePlay() {
-    vid.play().catch(() => {});
-  }
-
-  if (vid.canPlayType('application/vnd.apple.mpegurl')) {
-    vid.src = src;
-    vid.addEventListener('loadedmetadata', forcePlay);
-    vid.addEventListener('canplay', forcePlay);
-  } else {
-    const s = document.createElement('script');
-    s.src = 'https://cdn.jsdelivr.net/npm/hls.js@latest/dist/hls.min.js';
-    s.onload = function() {
-      if (Hls.isSupported()) {
-        const hls = new Hls({ enableWorker: false });
-        hls.loadSource(src);
-        hls.attachMedia(vid);
-        hls.on(Hls.Events.MANIFEST_PARSED, forcePlay);
-        hls.on(Hls.Events.BUFFER_APPENDED, forcePlay);
-        vid.addEventListener('canplay', forcePlay);
-      }
-    };
-    document.head.appendChild(s);
-  }
-
-  // fallback: tenta dar play quando a página ficar visível
+  function forcePlay() { vid.play().catch(() => {}); }
+  vid.addEventListener('loadedmetadata', forcePlay);
+  vid.addEventListener('canplay', forcePlay);
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden && vid.paused) forcePlay();
   });
