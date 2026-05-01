@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Prompt Max — A sua casa de Prompts</title>
+  <title>Prompt House — A sua casa de Prompts</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
@@ -210,7 +210,15 @@
     .toast.info    { background: var(--glass); border: 1px solid var(--glass-border); color: var(--text); }
 
     @media (max-width: 768px) {
-      .hero h1 { letter-spacing: -2px; } .adm-stats { grid-template-columns: repeat(2,1fr); }
+      .hero { padding: 60px 20px 40px; }
+      .hero h1 { letter-spacing: -1px; font-size: clamp(40px, 11vw, 72px); }
+      .hero p { font-size: 15px; padding: 0 8px; }
+      .stats-pill { flex-direction: column; width: 100%; max-width: 280px; }
+      .sp-item { border-right: none !important; border-bottom: 1px solid var(--glass-border); padding: 14px 20px; }
+      .sp-item:last-child { border-bottom: none; }
+      .filter-bar { padding: 0 16px; justify-content: flex-start; overflow-x: auto; flex-wrap: nowrap; }
+      .filter-bar::-webkit-scrollbar { display: none; }
+      .search-wrap { min-width: 160px; flex-shrink: 0; } .adm-stats { grid-template-columns: repeat(2,1fr); }
       .admin-wrap { grid-template-columns: 1fr; } .admin-side { display: none; }
       .form-row2 { grid-template-columns: 1fr; } .cards-grid { padding: 0 16px 60px; } nav { padding: 0 16px; }
     }
@@ -225,7 +233,7 @@
 
 <div class="app">
   <nav>
-    <div class="logo" onclick="goHome()">Prompt<em>Max</em></div>
+    <div class="logo" onclick="goHome()">Prompt<em>House</em></div>
     <div class="nav-tabs">
       <button class="ntab active" id="nav-home" onclick="switchView('home')">Explorar</button>
       <button class="ntab" id="nav-admin" onclick="switchView('admin')">Admin</button>
@@ -243,8 +251,8 @@
         <video class="hero-video" id="hero-vid" autoplay muted loop playsinline></video>
       </div>
       <div class="hero-content">
-        <h1><span class="l1">A sua casa de</span><span class="l2">Prompts</span></h1>
-        <p>Prompts profissionais para Midjourney, Leonardo AI, ChatGPT e muito mais. Grátis pra começar.</p>
+        <h1><span class="l1">Dê asas a sua</span><span class="l2">imaginação</span></h1>
+        <p>Prompts profissionais para Gemini, Nano Banana e GPT2. Grátis pra começar.</p>
         <div class="stats-pill">
           <div class="sp-item"><span class="sp-val" id="hero-total">—</span><div class="sp-lbl">Prompts</div></div>
           <div class="sp-item"><span class="sp-val" id="hero-views">—</span><div class="sp-lbl">Views</div></div>
@@ -373,7 +381,7 @@
           </div>
           <div class="form-panel">
             <h3>Identidade</h3>
-            <div class="fg"><label>Nome do site</label><input value="Prompt Max"></div>
+            <div class="fg"><label>Nome do site</label><input value="Prompt House"></div>
             <div class="fg"><label>Tagline</label><input value="A sua casa de Prompts"></div>
             <div class="form-actions"><button class="btn-pub">Salvar</button></div>
           </div>
