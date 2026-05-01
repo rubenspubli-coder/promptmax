@@ -236,8 +236,7 @@
 
     /* TOAST */
     /* MOBILE FOOTER BAR */
-    .mobile-footer-bar { display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 200; background: rgba(8,11,20,0.95); border-top: 1px solid var(--glass-border); backdrop-filter: blur(20px); padding: 12px 16px; }
-    .mobile-footer-bar.show { display: flex; gap: 8px; justify-content: space-between; }
+    .mobile-footer-bar { display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 200; background: rgba(8,11,20,0.95); border-top: 1px solid var(--glass-border); backdrop-filter: blur(20px); padding: 12px 16px; gap: 8px; justify-content: space-between; }
     .mfb-btn { flex: 1; padding: 12px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; border: none; font-family: 'Inter', sans-serif; transition: all 0.15s; text-align: center; }
     .mfb-assinar { background: linear-gradient(90deg, var(--amber), var(--pink)); color: #08080a; }
     .mfb-assinar:hover { opacity: 0.88; }
@@ -340,7 +339,7 @@
 <div class="app">
   <nav>
     <div style="display: flex; align-items: center; gap: 20px; flex: 1;">
-      <div class="logo" onclick="goHome()">Prompt<em>House</em></div>
+      <div class="logo" onclick="scrollToTop()">Prompt<em>House</em></div>
       <div class="header-search">
         <div style="display: flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 20px; border: 1px solid var(--glass-border); background: var(--glass); backdrop-filter: blur(10px); min-width: 320px; max-width: 420px;">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.38)" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
@@ -824,6 +823,7 @@ function switchView(v){
   if(v==='admin'){loadStats();loadDashTable();}
 }
 function goHome(){switchView('home');}
+function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
 
 function showSec(id,el){
   document.querySelectorAll('.admin-main > div').forEach(d=>d.style.display='none');
