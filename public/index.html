@@ -26,11 +26,11 @@
     .blob-4 { width: 450px; height: 600px; background: #0f1a30; bottom: -100px; right: 5%; opacity: 0.6; }
     .blob-5 { width: 350px; height: 350px; background: #1a0e35; top: 45%; left: 45%; opacity: 0.5; }
 
-    .app { position: relative; z-index: 1; }
+    .app { position: relative; z-index: 1; padding-top: 62px; }
     .view { display: none; } .view.active { display: block; }
 
     /* NAV */
-    nav { position: sticky; top: 0; z-index: 200; display: flex; align-items: center; justify-content: space-between; padding: 0 36px; height: 62px; background: rgba(8,11,20,0.65); border-bottom: 1px solid var(--glass-border); backdrop-filter: blur(24px); }
+    nav { position: fixed; top: 0; left: 0; right: 0; z-index: 200; display: flex; align-items: center; justify-content: space-between; padding: 0 36px; height: 62px; background: rgba(8,11,20,0.65); border-bottom: 1px solid var(--glass-border); backdrop-filter: blur(24px); }
     .logo { font-size: 19px; font-weight: 800; cursor: pointer; }
     .logo em { font-style: normal; background: linear-gradient(90deg, var(--amber) 0%, var(--pink) 50%, var(--purple) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
     .nav-tabs { display: flex; gap: 4px; }
@@ -48,12 +48,15 @@
     .mobile-menu-btn:hover { background: rgba(255,255,255,0.12); }
     .header-search { display: flex; flex-shrink: 0; }
     @media (max-width: 768px) {
-      .hamburger { display: flex; }
+      .hamburger { display: none !important; }
       .btn-icon { display: none !important; }
-      .header-search > div { min-width: 180px !important; max-width: 200px !important; padding: 8px 14px !important; }
-      .header-search input { font-size: 12px !important; }
-      .logo { font-size: 16px !important; font-weight: 700 !important; }
-      .btn-assinar { font-size: 11px !important; padding: 6px 12px !important; }
+      .btn-assinar { display: none !important; }
+      .header-search { flex: 1; }
+      .header-search > div { min-width: auto !important; max-width: 100% !important; width: 100% !important; padding: 10px 16px !important; }
+      .header-search input { font-size: 13px !important; }
+      .logo { font-size: 17px !important; font-weight: 700 !important; white-space: nowrap; }
+      .mobile-footer-bar { display: flex; }
+      .app { padding-bottom: 80px; }
       .nav-tabs { display: none; }
     }
     .btn-ghost { padding: 7px 18px; border-radius: 10px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid var(--glass-border); background: transparent; color: var(--muted); font-family: 'Inter', sans-serif; transition: all 0.15s; }
@@ -232,6 +235,15 @@
     .tsw.on::after { left: 20px; background: var(--green); }
 
     /* TOAST */
+    /* MOBILE FOOTER BAR */
+    .mobile-footer-bar { display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 200; background: rgba(8,11,20,0.95); border-top: 1px solid var(--glass-border); backdrop-filter: blur(20px); padding: 12px 16px; }
+    .mobile-footer-bar.show { display: flex; gap: 8px; justify-content: space-between; }
+    .mfb-btn { flex: 1; padding: 12px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; border: none; font-family: 'Inter', sans-serif; transition: all 0.15s; text-align: center; }
+    .mfb-assinar { background: linear-gradient(90deg, var(--amber), var(--pink)); color: #08080a; }
+    .mfb-assinar:hover { opacity: 0.88; }
+    .mfb-auth { background: rgba(255,255,255,0.06); border: 1px solid var(--glass-border); color: var(--text); }
+    .mfb-auth:hover { background: rgba(255,255,255,0.12); }
+
     /* SUBSCRIPTION MODAL */
     .sub-overlay { display: none; position: fixed; inset: 0; z-index: 700; background: rgba(0,0,0,0.88); backdrop-filter: blur(16px); align-items: center; justify-content: center; padding: 20px; }
     .sub-overlay.open { display: flex; }
@@ -641,6 +653,12 @@
       </button>
     </div>
   </div>
+</div>
+
+<div class="mobile-footer-bar">
+  <button class="mfb-btn mfb-assinar" onclick="openSubModal()">Assinar</button>
+  <button class="mfb-btn mfb-auth" onclick="openAuthModal('login')">Login</button>
+  <button class="mfb-btn mfb-auth" onclick="openAuthModal('register')">Cadastrar</button>
 </div>
 
 <div class="toast" id="toast"></div>
