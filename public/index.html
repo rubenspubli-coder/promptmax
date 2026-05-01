@@ -91,7 +91,7 @@
     .sp-lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.2px; margin-top: 2px; }
 
     /* FILTERS */
-    .filter-bar { display: flex; flex-direction: column; align-items: stretch; gap: 12px; margin-bottom: 52px; padding: 0 36px; max-width: 900px; margin-left: auto; margin-right: auto; margin-bottom: 52px; }
+    .filter-bar { display: flex; flex-direction: column; align-items: stretch; gap: 12px; margin-top: 40px; margin-bottom: 52px; padding: 0 36px; max-width: 900px; margin-left: auto; margin-right: auto; }
     .filter-tags-row { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
     .fpill { padding: 8px 22px; border-radius: 20px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid var(--glass-border); background: var(--glass); color: var(--muted); font-family: 'Inter', sans-serif; transition: all 0.2s; backdrop-filter: blur(10px); }
     .fpill:hover { color: var(--text); border-color: rgba(255,255,255,0.22); }
@@ -237,7 +237,8 @@
     /* TOAST */
     /* MOBILE FOOTER BAR */
     .mobile-footer-bar { display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 200; background: rgba(8,11,20,0.95); border-top: 1px solid var(--glass-border); backdrop-filter: blur(20px); padding: 12px 16px; gap: 8px; justify-content: space-between; }
-    .mfb-btn { flex: 1; padding: 12px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; border: none; font-family: 'Inter', sans-serif; transition: all 0.15s; text-align: center; }
+    .mfb-btn { flex: 1; padding: 12px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; border: none; font-family: 'Inter', sans-serif; transition: all 0.15s; text-align: center; display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .mfb-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
     .mfb-assinar { background: linear-gradient(90deg, var(--amber), var(--pink)); color: #08080a; }
     .mfb-assinar:hover { opacity: 0.88; }
     .mfb-auth { background: rgba(255,255,255,0.06); border: 1px solid var(--glass-border); color: var(--text); }
@@ -655,9 +656,18 @@
 </div>
 
 <div class="mobile-footer-bar">
-  <button class="mfb-btn mfb-assinar" onclick="openSubModal()">Assinar</button>
-  <button class="mfb-btn mfb-auth" onclick="openAuthModal('login')">Login</button>
-  <button class="mfb-btn mfb-auth" onclick="openAuthModal('register')">Cadastrar</button>
+  <button class="mfb-btn mfb-assinar" onclick="openSubModal()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+    Assinar
+  </button>
+  <button class="mfb-btn mfb-auth" onclick="openAuthModal('login')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+    Login
+  </button>
+  <button class="mfb-btn mfb-auth" onclick="openAuthModal('register')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>
+    Cadastrar
+  </button>
 </div>
 
 <div class="toast" id="toast"></div>
