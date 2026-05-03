@@ -118,6 +118,7 @@
     .thumb-video  { background: linear-gradient(135deg, #0a1a1a 0%, #0c3535 60%, #145858 100%); }
     .thumb-text   { background: linear-gradient(135deg, #1a1408 0%, #2e2410 60%, #443618 100%); }
     .thumb-design { background: linear-gradient(135deg, #0a0a1a 0%, #141428 60%, #1e1e3e 100%); }
+    .thumb-influencer { background: linear-gradient(135deg, #1a0a28 0%, #2d1450 60%, #4a1f80 100%); }
 
     /* Badge PROMPT top-left */
     .card-badge { position: absolute; top: 12px; left: 12px; display: flex; align-items: center; gap: 5px; background: rgba(20,24,40,0.82); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; padding: 4px 10px; font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.85); letter-spacing: 0.8px; backdrop-filter: blur(8px); }
@@ -399,7 +400,7 @@
         <button class="fpill" onclick="setFilter(this,'sports')">Esportes</button>
         <button class="fpill" onclick="setFilter(this,'photo')">Fotografia</button>
         <button class="fpill" onclick="setFilter(this,'video')">Vídeo</button>
-        <button class="fpill" onclick="setFilter(this,'text')">Texto</button>
+        <button class="fpill" onclick="setFilter(this,'influencer')">Influencer</button>
         <button class="fpill" onclick="setFilter(this,'design')">Design</button>
       </div>
     </div>
@@ -673,9 +674,9 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const CATS={sports:'Esportes',photo:'Fotografia',video:'Vídeo',text:'Texto',design:'Design'};
-const ICONS={sports:'✦',photo:'✿',video:'▶',text:'✎',design:'◈'};
-const THUMBS={sports:'thumb-sports',photo:'thumb-photo',video:'thumb-video',text:'thumb-text',design:'thumb-design'};
+const CATS={sports:'Esportes',photo:'Fotografia',video:'Vídeo',influencer:'Influencer',design:'Design'};
+const ICONS={sports:'✦',photo:'✿',video:'▶',influencer:'★',design:'◈'};
+const THUMBS={sports:'thumb-sports',photo:'thumb-photo',video:'thumb-video',influencer:'thumb-influencer',design:'thumb-design'};
 let allPrompts=[],currentFilter='all',currentSearch='',currentPrompt=null;
 const likedSet=new Set(JSON.parse(localStorage.getItem('pm_likes')||'[]'));
 const savedSet=new Set(JSON.parse(localStorage.getItem('pm_saved')||'[]'));
