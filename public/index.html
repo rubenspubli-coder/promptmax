@@ -358,7 +358,7 @@
       <div class="header-search">
         <div style="display: flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 20px; border: 1px solid var(--glass-border); background: var(--glass); backdrop-filter: blur(10px); min-width: 320px; max-width: 420px;">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.38)" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          <input type="text" placeholder="Busca de prompts..." style="background: transparent; border: none; outline: none; color: var(--text); font-size: 13px; width: 100%; font-family: 'Inter', sans-serif;" oninput="handleSearch(this.value)">
+          <input type="text" placeholder="Busca de prompts..." value="" style="background: transparent; border: none; outline: none; color: var(--text); font-size: 13px; width: 100%; font-family: 'Inter', sans-serif;" oninput="handleSearch(this.value)">
         </div>
       </div>
     </div>
@@ -740,12 +740,18 @@ async function apiForm(method,path,formData){
 
 async function loadPrompts(){
   try{
+    console.log('🔄 Carregando prompts do backend...');
     allPrompts=await api('GET','/prompts');
+    console.log('✅ Prompts carregados:', allPrompts.length, allPrompts);
     renderGrid();
     const views=allPrompts.reduce((a,p)=>a+(p.views||0),0);
     animCount('hero-total',allPrompts.length);
     animCount('hero-views',views>=1000?Math.round(views/1000):views,views>=1000?'k':'');
-  }catch(e){document.getElementById('cards-grid').innerHTML='<div class="empty-msg">Erro ao carregar. Verifique a conexão.</div>';}
+  }catch(e){
+    console.error('❌ Erro ao carregar prompts:', e);
+    document.getElementById('cards-grid').innerHTML='<div class="empty-msg">Erro ao carregar. Verifique a conexão.</div>';
+  }
+}
 }
 
 function animCount(id,target,sfx=''){
