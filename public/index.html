@@ -245,6 +245,19 @@
     .mfb-auth { background: rgba(255,255,255,0.06); border: 1px solid var(--glass-border); color: var(--text); }
     .mfb-auth:hover { background: rgba(255,255,255,0.12); }
 
+    /* ADMIN AUTH MODAL */
+    .admin-auth-overlay { display: none; position: fixed; inset: 0; z-index: 800; background: rgba(0,0,0,0.92); backdrop-filter: blur(16px); align-items: center; justify-content: center; padding: 20px; }
+    .admin-auth-overlay.open { display: flex; }
+    .admin-auth-modal { background: rgba(10,12,24,0.98); border: 1px solid var(--glass-border); border-radius: 24px; width: 100%; max-width: 400px; padding: 36px; backdrop-filter: blur(30px); text-align: center; }
+    .admin-auth-title { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 8px; }
+    .admin-auth-sub { font-size: 14px; color: var(--muted); margin-bottom: 28px; }
+    .admin-auth-input { width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--glass-border); border-radius: 12px; padding: 14px 18px; color: var(--text); font-size: 15px; font-family: 'Inter', sans-serif; outline: none; margin-bottom: 18px; text-align: center; letter-spacing: 8px; font-weight: 600; }
+    .admin-auth-input:focus { border-color: rgba(255,255,255,0.3); }
+    .admin-auth-btn { width: 100%; padding: 14px; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; border: none; background: linear-gradient(90deg, var(--amber), var(--pink)); color: #08080a; font-family: 'Inter', sans-serif; transition: all 0.15s; }
+    .admin-auth-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+    .admin-auth-error { color: #f87171; font-size: 13px; margin-top: -10px; margin-bottom: 12px; display: none; }
+    .admin-auth-error.show { display: block; }
+
     /* SUBSCRIPTION MODAL */
     .sub-overlay { display: none; position: fixed; inset: 0; z-index: 700; background: rgba(0,0,0,0.88); backdrop-filter: blur(16px); align-items: center; justify-content: center; padding: 20px; }
     .sub-overlay.open { display: flex; }
@@ -539,6 +552,17 @@
   </div>
 </div>
 
+<!-- ADMIN AUTH MODAL -->
+<div class="admin-auth-overlay" id="admin-auth-modal">
+  <div class="admin-auth-modal">
+    <div class="admin-auth-title">🔐 Acesso Admin</div>
+    <div class="admin-auth-sub">Digite a senha para acessar o painel</div>
+    <input type="password" id="admin-password" class="admin-auth-input" placeholder="••••••" maxlength="20" onkeypress="if(event.key==='Enter')checkAdminPassword()">
+    <div class="admin-auth-error" id="admin-auth-error">❌ Senha incorreta</div>
+    <button class="admin-auth-btn" onclick="checkAdminPassword()">Entrar no Admin</button>
+  </div>
+</div>
+
 <!-- SUBSCRIPTION MODAL -->
 <div class="sub-overlay" id="sub-modal" onclick="maybeCloseSub(event)">
   <div class="sub-modal">
@@ -827,11 +851,41 @@ function copyPrompt(){
 }
 
 function switchView(v){
+  if(v==='admin' && !isAdminAuthed()){
+    openAdminAuth();
+    return;
+  }
   document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
   document.querySelectorAll('.ntab').forEach(el=>el.classList.remove('active'));
   document.getElementById('view-'+v).classList.add('active');
   document.getElementById('nav-'+v).classList.add('active');
   if(v==='admin'){loadStats();loadDashTable();}
+}
+
+function isAdminAuthed(){
+  return localStorage.getItem('ph_admin_auth')==='true';
+}
+
+function openAdminAuth(){
+  document.getElementById('admin-auth-modal').classList.add('open');
+  document.getElementById('admin-password').value='';
+  document.getElementById('admin-auth-error').classList.remove('show');
+  setTimeout(()=>document.getElementById('admin-password').focus(),100);
+}
+
+function checkAdminPassword(){
+  const pass=document.getElementById('admin-password').value;
+  const correctPass='Pablo'; // Altere aqui para mudar a senha
+  if(pass===correctPass){
+    localStorage.setItem('ph_admin_auth','true');
+    document.getElementById('admin-auth-modal').classList.remove('open');
+    switchView('admin');
+    showToast('Acesso liberado! ✓','success');
+  }else{
+    document.getElementById('admin-auth-error').classList.add('show');
+    document.getElementById('admin-password').value='';
+    setTimeout(()=>document.getElementById('admin-auth-error').classList.remove('show'),3000);
+  }
 }
 function goHome(){switchView('home');}
 function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
