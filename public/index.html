@@ -358,7 +358,7 @@
       <div class="header-search">
         <div style="display: flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 20px; border: 1px solid var(--glass-border); background: var(--glass); backdrop-filter: blur(10px); min-width: 320px; max-width: 420px;">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.38)" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          <input type="text" id="header-search" placeholder="Busca de prompts..." value="" style="background: transparent; border: none; outline: none; color: var(--text); font-size: 13px; width: 100%; font-family: 'Inter', sans-serif;">
+          <input type="text" id="header-search" placeholder="Busca de prompts..." value="" autocomplete="off" style="background: transparent; border: none; outline: none; color: var(--text); font-size: 13px; width: 100%; font-family: 'Inter', sans-serif;">
         </div>
       </div>
     </div>
@@ -1123,6 +1123,7 @@ function loadContacts() {
 // Attach search handler
 const searchInput = document.getElementById('header-search');
 if (searchInput) {
+  searchInput.value = ''; // Force clear on load
   searchInput.addEventListener('input', function(e) {
     handleSearch(e.target.value);
   });
