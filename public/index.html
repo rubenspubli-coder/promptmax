@@ -868,6 +868,13 @@ function switchView(v){
 }
 
 function isAdminAuthed(){
+  // Força re-autenticação se senha mudou
+  const savedVersion = localStorage.getItem('ph_admin_pass_version');
+  const currentVersion = 'v2'; // Incrementa quando mudar senha
+  if(savedVersion !== currentVersion){
+    localStorage.removeItem('ph_admin_auth');
+    localStorage.setItem('ph_admin_pass_version', currentVersion);
+  }
   return localStorage.getItem('ph_admin_auth')==='true';
 }
 
@@ -880,7 +887,7 @@ function openAdminAuth(){
 
 function checkAdminPassword(){
   const pass=document.getElementById('admin-password').value;
-  const correctPass='Pablo'; // Altere aqui para mudar a senha
+  const correctPass='pablo10'; // Altere aqui para mudar a senha
   if(pass===correctPass){
     localStorage.setItem('ph_admin_auth','true');
     document.getElementById('admin-auth-modal').classList.remove('open');
