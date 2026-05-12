@@ -126,6 +126,9 @@
 
     /* Bookmark top-right */
     .card-bookmark { position: absolute; top: 10px; right: 10px; width: 34px; height: 34px; border-radius: 10px; background: rgba(20,24,40,0.75); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(8px); transition: all 0.15s; }
+    .card-pro-badge { position: absolute; top: 10px; left: 10px; padding: 4px 10px; border-radius: 6px; background: linear-gradient(135deg, var(--amber), var(--pink)); color: #08080a; font-size: 11px; font-weight: 800; letter-spacing: 0.5px; z-index: 5; }
+    .card-lock-overlay { position: absolute; inset: 0; background: rgba(8,11,20,0.85); backdrop-filter: blur(8px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: var(--text); font-size: 14px; font-weight: 700; z-index: 4; }
+    .card-lock-overlay svg { opacity: 0.6; }
     .card-bookmark:hover { background: rgba(255,255,255,0.12); }
     .card-bookmark svg { width: 16px; height: 16px; stroke: rgba(255,255,255,0.7); fill: none; }
     .card-bookmark.saved svg { fill: var(--amber); stroke: var(--amber); }
@@ -267,8 +270,11 @@
     .sub-close:hover { color: var(--text); }
     .sub-badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px; border-radius: 20px; border: 1px solid rgba(232,121,249,0.3); background: rgba(232,121,249,0.08); font-size: 11px; font-weight: 700; color: var(--pink); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 18px; }
     .sub-title { font-family: 'Ultra', serif; font-style: italic; font-size: clamp(26px, 5vw, 36px); line-height: 1.2; margin-bottom: 10px; background: linear-gradient(90deg, var(--text) 0%, var(--pink) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-    .sub-sub { font-size: 14px; color: var(--muted); margin-bottom: 32px; }
-    .sub-plans { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; padding: 0 36px; margin-bottom: 28px; }
+    .sub-sub { font-size: 14px; color: var(--muted); margin-bottom: 24px; }
+    .sub-benefits { display: flex; flex-direction: column; gap: 10px; padding: 0 36px; margin-bottom: 32px; }
+    .benefit-item { font-size: 14px; color: rgba(255,255,255,0.85); display: flex; align-items: center; gap: 8px; }
+    .plan-save { font-size: 13px; font-weight: 700; color: #22c55e; margin-top: 8px; margin-bottom: 12px; }
+    .sub-plans { display: grid; grid-template-columns: repeat(2,1fr); gap: 16px; padding: 0 36px; margin-bottom: 28px; }
     .plan-card { border: 1px solid var(--glass-border); border-radius: 18px; padding: 22px 16px; text-align: center; cursor: pointer; transition: all 0.2s; background: rgba(255,255,255,0.03); position: relative; }
     .plan-card:hover { border-color: rgba(255,255,255,0.22); background: rgba(255,255,255,0.06); transform: translateY(-3px); }
     .plan-card.popular { border-color: rgba(232,121,249,0.4); background: rgba(232,121,249,0.06); }
@@ -280,10 +286,10 @@
     .plan-perks { list-style: none; text-align: left; margin-bottom: 18px; display: flex; flex-direction: column; gap: 6px; }
     .plan-perks li { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
     .plan-perks li::before { content: '✓'; color: var(--green); font-weight: 700; flex-shrink: 0; }
-    .plan-btn { width: 100%; padding: 10px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.07); color: var(--text); font-family: 'Inter', sans-serif; transition: all 0.15s; }
-    .plan-btn:hover { background: rgba(255,255,255,0.15); }
+    .plan-btn { display: block; width: 100%; padding: 10px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.07); color: var(--text); font-family: 'Inter', sans-serif; transition: all 0.15s; text-align: center; text-decoration: none; }
+    .plan-btn:hover { background: rgba(255,255,255,0.15); transform: translateY(-1px); }
     .plan-card.popular .plan-btn { background: linear-gradient(90deg, var(--amber), var(--pink)); border: none; color: #08080a; }
-    .plan-card.popular .plan-btn:hover { opacity: 0.88; }
+    .plan-card.popular .plan-btn:hover { opacity: 0.88; transform: translateY(-1px); }
     .sub-footer { padding: 0 36px 28px; text-align: center; font-size: 12px; color: var(--muted2); }
     .sub-footer a { color: var(--muted); cursor: pointer; }
 
@@ -342,6 +348,16 @@
       .sub-footer { padding: 0 20px 24px; } .admin-side { display: none; }
       .form-row2 { grid-template-columns: 1fr; } .cards-grid { padding: 0 16px 60px; } nav { padding: 0 16px; }
     }
+    
+    /* ADMIN SUBSCRIPTION MANAGEMENT */
+    .status-badge { padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; }
+    .status-badge.active { background: rgba(34,197,94,0.15); color: #22c55e; }
+    .status-badge.inactive { background: rgba(239,68,68,0.15); color: #ef4444; }
+    .btn-mini { padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; border: none; font-family: 'Inter', sans-serif; transition: all 0.15s; }
+    .btn-success { background: rgba(34,197,94,0.15); color: #22c55e; }
+    .btn-success:hover { background: rgba(34,197,94,0.25); }
+    .btn-danger { background: rgba(239,68,68,0.15); color: #ef4444; }
+    .btn-danger:hover { background: rgba(239,68,68,0.25); }
   </style>
 </head>
 <body>
@@ -522,7 +538,7 @@
               <span style="font-size:12px;color:var(--muted)" id="contacts-count"></span>
             </div>
             <table>
-              <thead><tr><th>Nome</th><th>Email</th><th>Método</th><th>Cadastro</th><th>Status</th></tr></thead>
+              <thead><tr><th>Nome</th><th>Email</th><th>Status</th><th>Plano</th><th>Assinado em</th><th>Ações</th></tr></thead>
               <tbody id="contacts-tbody"></tbody>
             </table>
           </div>
@@ -566,49 +582,35 @@
     <div class="sub-top">
       <button class="sub-close" onclick="closeSubModal()">×</button>
       <div class="sub-badge">✦ Acesso Premium</div>
-      <div class="sub-title">Desbloqueie a biblioteca completa</div>
-      <p class="sub-sub">Escolha uma opção abaixo para liberar o acesso agora.</p>
+      <div class="sub-title">Desbloqueie todos os prompts</div>
+      <p class="sub-sub">Escolha o plano ideal para você</p>
     </div>
+    
+    <div class="sub-benefits">
+      <div class="benefit-item">✓ Acesso ilimitado a todos os prompts premium</div>
+      <div class="benefit-item">✓ Novas coleções liberadas toda semana</div>
+      <div class="benefit-item">✓ Suporte prioritário e atualizações</div>
+      <div class="benefit-item">✓ Cancele quando quiser, sem fidelidade</div>
+    </div>
+
     <div class="sub-plans">
-      <div class="plan-card" onclick="selectPlan('semestral')">
-        <div class="plan-name">Semestral</div>
-        <div class="plan-price">R$47<span>/sem</span></div>
-        <p class="plan-desc">6 meses de acesso completo</p>
-        <ul class="plan-perks">
-          <li>Todos os prompts</li>
-          <li>Novidades mensais</li>
-          <li>Suporte prioritário</li>
-        </ul>
-        <button class="plan-btn">Assinar agora</button>
+      <div class="plan-card">
+        <div class="plan-name">MENSAL</div>
+        <div class="plan-price">R$19,90<span>/mês</span></div>
+        <a href="https://pay.kiwify.com.br/jVKzqId" target="_blank" class="plan-btn">Assinar</a>
       </div>
-      <div class="plan-card popular" onclick="selectPlan('anual')">
-        <div class="plan-popular-badge">MAIS POPULAR</div>
-        <div class="plan-name">Anual</div>
-        <div class="plan-price">R$77<span>/ano</span></div>
-        <p class="plan-desc">12 meses + 2 meses grátis</p>
-        <ul class="plan-perks">
-          <li>Todos os prompts</li>
-          <li>Novidades mensais</li>
-          <li>Suporte prioritário</li>
-          <li>Downloads ilimitados</li>
-        </ul>
-        <button class="plan-btn">Assinar agora</button>
-      </div>
-      <div class="plan-card" onclick="selectPlan('vitalicio')">
-        <div class="plan-name">Vitalício</div>
-        <div class="plan-price">R$197<span> único</span></div>
-        <p class="plan-desc">Acesso para sempre, pague uma vez</p>
-        <ul class="plan-perks">
-          <li>Todos os prompts</li>
-          <li>Atualizações vitalícias</li>
-          <li>Suporte VIP</li>
-          <li>Acesso antecipado</li>
-        </ul>
-        <button class="plan-btn">Assinar agora</button>
+      
+      <div class="plan-card popular">
+        <div class="plan-popular-badge">MAIS ESCOLHIDO</div>
+        <div class="plan-name">ANUAL</div>
+        <div class="plan-price">R$149,90<span>/ano</span></div>
+        <div class="plan-save">Economize 35%</div>
+        <a href="https://pay.kiwify.com.br/bCQL1VF" target="_blank" class="plan-btn">Assinar</a>
       </div>
     </div>
+    
     <div class="sub-footer">
-      🔒 Pagamento seguro · Cancele quando quiser · <a onclick="closeSubModal()">Continuar grátis</a>
+      🔒 Pagamento seguro via Kiwify · <a onclick="closeSubModal()">Continuar grátis</a>
     </div>
   </div>
 </div>
@@ -699,6 +701,7 @@ const CATS={sports:'Esportes',photo:'Fotografia',video:'Vídeo',influencer:'Infl
 const ICONS={sports:'✦',photo:'✿',video:'▶',influencer:'★',design:'◈'};
 const THUMBS={sports:'thumb-sports',photo:'thumb-photo',video:'thumb-video',influencer:'thumb-influencer',design:'thumb-design'};
 let allPrompts=[],currentFilter='all',currentSearch='',currentPrompt=null;
+let isSubscriber = false; // Controle de assinatura
 const likedSet=new Set(JSON.parse(localStorage.getItem('pm_likes')||'[]'));
 const savedSet=new Set(JSON.parse(localStorage.getItem('pm_saved')||'[]'));
 
@@ -721,6 +724,37 @@ function toggleSave(id,e){
   localStorage.setItem('pm_saved',JSON.stringify([...savedSet]));
 }
 
+// ── SUBSCRIPTION CONTROL ────────────────────────────────────
+function checkSubscription(){
+  const user = JSON.parse(localStorage.getItem('ph_current_user') || 'null');
+  isSubscriber = user?.isSubscriber === true;
+  console.log('📊 Status assinatura:', isSubscriber ? '✅ ASSINANTE' : '❌ NÃO ASSINANTE');
+  return isSubscriber;
+}
+
+function markAsSubscriber(){
+  const user = JSON.parse(localStorage.getItem('ph_current_user') || 'null');
+  if(user){
+    user.isSubscriber = true;
+    user.subscribedAt = new Date().toISOString();
+    localStorage.setItem('ph_current_user', JSON.stringify(user));
+    isSubscriber = true;
+    showToast('Assinatura ativada! Recarregando...', 'success');
+    setTimeout(() => location.reload(), 1500);
+  } else {
+    showToast('Faça login primeiro!', 'error');
+  }
+}
+
+// Helper para testar (chamar no console: activateSubscription())
+window.activateSubscription = markAsSubscriber;
+
+function canAccessPrompt(prompt){
+  if(prompt.tipo === 'free') return true;
+  return isSubscriber;
+}
+
+// ── API ──────────────────────────────────────────────────────
 async function api(method,path,body){
   const o={method,headers:{'Content-Type':'application/json'}};
   if(body)o.body=JSON.stringify(body);
@@ -778,10 +812,16 @@ function renderGrid(){
     const saved=savedSet.has(p.id);
     const daysAgo=Math.floor((Date.now()-new Date(p.created_at))/(1000*60*60*24));
     const dateStr=daysAgo===0?'hoje':daysAgo===1?'1 dia atrás':daysAgo+' dias atrás';
+    const isPro = p.tipo === 'pro';
+    const isLocked = isPro && !isSubscriber;
+    const lockOverlay = isLocked ? `<div class="card-lock-overlay"><svg viewBox="0 0 24 24" fill="currentColor" width="32" height="32"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6zm9 14H6V10h12v10zm-6-3c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"/></svg><div>PRO</div></div>` : '';
+    const proBadge = isPro ? `<div class="card-pro-badge">PRO</div>` : '';
     return `
     <div class="pcard" onclick="openModal(${p.id})">
       <div class="card-img-wrap">
         ${imgHtml}
+        ${lockOverlay}
+        ${proBadge}
         <div class="card-badge">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><polyline points="8 21 12 17 16 21"/></svg>
           PROMPT
@@ -829,6 +869,13 @@ function previewImg(input,previewId){
 async function openModal(id){
   try{
     const p=await api('GET',`/prompts/${id}`);currentPrompt=p;
+    
+    // Verificar se tem acesso
+    if(!canAccessPrompt(p)){
+      openSubModal();
+      return;
+    }
+    
     document.getElementById('m-cat').textContent=(CATS[p.category]||p.category).toUpperCase()+' · '+(p.tool||'');
     document.getElementById('m-title').textContent=p.title;
     document.getElementById('m-desc').textContent=p.description||'';
@@ -1007,6 +1054,8 @@ function showToast(msg,type='success'){const t=document.getElementById('toast');
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){ closeModal(); closeAuthModal(); }
 });
+
+checkSubscription();
 loadPrompts();
 
 // Admin access via URL hash: https://prompthouse.up.railway.app/#admin
@@ -1036,10 +1085,8 @@ document.addEventListener('click', (e) => {
 function openSubModal() { document.getElementById('sub-modal').classList.add('open'); }
 function closeSubModal() { document.getElementById('sub-modal').classList.remove('open'); }
 function maybeCloseSub(e) { if(e.target===document.getElementById('sub-modal')) closeSubModal(); }
-function selectPlan(plan) { showToast('Redirecionando para pagamento...', 'info'); closeSubModal(); }
 
 // ── AUTH MODAL ───────────────────────────────────────────────
-let users = JSON.parse(localStorage.getItem('ph_users') || '[]');
 
 function openAuthModal(tab='login') {
   switchAuthTab(tab);
@@ -1056,61 +1103,76 @@ function switchAuthTab(tab) {
 }
 
 function loginWithGoogle() {
-  // Simula login com Google — integrar Firebase/OAuth depois
-  const fakeUser = { name: 'Usuário Google', email: 'usuario@gmail.com', method: 'Google', date: new Date().toISOString() };
-  saveUser(fakeUser);
   showToast('Login com Google em breve!', 'info');
-  closeAuthModal();
 }
 
-function submitLogin() {
+async function submitLogin() {
   const email = document.getElementById('login-email').value.trim();
   const pass = document.getElementById('login-pass').value;
   if(!email || !pass) { showToast('Preencha todos os campos!', 'error'); return; }
-  const user = users.find(u => u.email === email);
-  if(!user) { showToast('Email não encontrado.', 'error'); return; }
-  showToast('Login realizado! ✓', 'success');
-  closeAuthModal();
+  
+  try {
+    const user = await api('POST', '/auth/login', { email, password: pass });
+    localStorage.setItem('ph_current_user', JSON.stringify(user));
+    checkSubscription();
+    showToast('Login realizado! ✓', 'success');
+    closeAuthModal();
+    renderGrid(); // Atualizar cards com status de assinatura
+  } catch (err) {
+    showToast('Email ou senha incorretos', 'error');
+  }
 }
 
-function submitRegister() {
+async function submitRegister() {
   const name = document.getElementById('reg-name').value.trim();
   const email = document.getElementById('reg-email').value.trim();
   const pass = document.getElementById('reg-pass').value;
   if(!name || !email || !pass) { showToast('Preencha todos os campos!', 'error'); return; }
   if(pass.length < 6) { showToast('Senha mínima de 6 caracteres!', 'error'); return; }
-  if(users.find(u => u.email === email)) { showToast('Email já cadastrado!', 'error'); return; }
-  saveUser({ name, email, method: 'Email', date: new Date().toISOString() });
-  showToast('Conta criada com sucesso! ✓', 'success');
-  closeAuthModal();
-}
-
-function saveUser(user) {
-  users.push(user);
-  localStorage.setItem('ph_users', JSON.stringify(users));
+  
+  try {
+    const user = await api('POST', '/auth/register', { name, email, password: pass });
+    localStorage.setItem('ph_current_user', JSON.stringify(user));
+    checkSubscription();
+    showToast('Cadastro realizado! ✓', 'success');
+    closeAuthModal();
+  } catch (err) {
+    showToast(err.message || 'Erro ao cadastrar', 'error');
+  }
 }
 
 // ── CONTATOS ADMIN ───────────────────────────────────────────
-function loadContacts() {
+async function loadContacts() {
   const tbody = document.getElementById('contacts-tbody');
-  const count = document.getElementById('contacts-count');
-  if(!tbody) return;
-  count.textContent = users.length + ' usuário(s)';
-  if(!users.length) {
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:rgba(255,255,255,.3);padding:28px">Nenhum usuário cadastrado ainda.</td></tr>';
-    return;
+  try {
+    const users = await api('GET', '/users');
+    tbody.innerHTML = users.map(u => `
+      <tr>
+        <td>${u.name || '-'}</td>
+        <td>${u.email}</td>
+        <td><span class="status-badge ${u.is_subscriber ? 'active' : 'inactive'}">${u.is_subscriber ? 'ATIVO' : 'INATIVO'}</span></td>
+        <td>${u.plan || '-'}</td>
+        <td>${u.subscribed_at ? new Date(u.subscribed_at).toLocaleDateString('pt-BR') : '-'}</td>
+        <td>
+          <button class="btn-mini ${u.is_subscriber ? 'btn-danger' : 'btn-success'}" onclick="toggleSubscription(${u.id}, ${!u.is_subscriber}, '${u.plan || 'monthly'}')">
+            ${u.is_subscriber ? 'Desativar' : 'Ativar'}
+          </button>
+        </td>
+      </tr>
+    `).join('') || '<tr><td colspan="6" style="text-align:center; padding:40px; color:var(--muted);">Nenhum usuário cadastrado</td></tr>';
+  } catch (err) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:40px; color:#f87171;">Erro ao carregar usuários</td></tr>';
   }
-  tbody.innerHTML = users.map((u,i) => {
-    const d = new Date(u.date);
-    const dateStr = d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
-    return `<tr>
-      <td style="font-weight:600">${u.name||'—'}</td>
-      <td style="color:rgba(255,255,255,.6)">${u.email}</td>
-      <td><span style="padding:2px 10px;border-radius:6px;font-size:11px;font-weight:700;background:${u.method==='Google'?'rgba(96,165,250,0.12)':'rgba(74,222,128,0.1)'};color:${u.method==='Google'?'var(--blue)':'var(--green)'}">${u.method}</span></td>
-      <td style="color:rgba(255,255,255,.45);font-size:12px">${dateStr}</td>
-      <td><span style="color:var(--green);font-size:11px;font-weight:700">Ativo</span></td>
-    </tr>`;
-  }).join('');
+}
+
+async function toggleSubscription(userId, activate, plan) {
+  try {
+    await api('PUT', `/users/${userId}/subscription`, { is_subscriber: activate, plan });
+    showToast(activate ? 'Assinatura ativada!' : 'Assinatura desativada!', 'success');
+    loadContacts();
+  } catch (err) {
+    showToast('Erro ao atualizar assinatura', 'error');
+  }
 }
 
 // Video background — MP4 direto
