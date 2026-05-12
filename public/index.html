@@ -105,8 +105,44 @@
     .empty-msg { grid-column: 1/-1; text-align: center; padding: 80px; color: var(--muted); }
 
     /* CARD — idêntico ao Koourse */
-    .pcard { background: #1a1d2e; border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; overflow: hidden; cursor: pointer; transition: all 0.25s; position: relative; display: flex; flex-direction: column; }
-    .pcard:hover { border-color: rgba(255,255,255,0.18); transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+    .pcard { 
+      background: #1a1d2e; 
+      border: 1px solid rgba(255,255,255,0.08); 
+      border-radius: 18px; 
+      overflow: hidden; 
+      cursor: pointer; 
+      transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1); 
+      position: relative; 
+      display: flex; 
+      flex-direction: column; 
+    }
+    
+    /* Glow effect atrás do card */
+    .pcard::before {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      background: linear-gradient(135deg, 
+        rgba(245,158,11,0.4) 0%,
+        rgba(236,72,153,0.4) 50%,
+        rgba(168,85,247,0.4) 100%
+      );
+      border-radius: 20px;
+      opacity: 0;
+      z-index: -1;
+      transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      filter: blur(20px);
+    }
+    
+    .pcard:hover::before {
+      opacity: 1;
+    }
+    
+    .pcard:hover { 
+      border-color: rgba(255,255,255,0.2); 
+      transform: translateY(-6px); 
+      box-shadow: 0 24px 48px rgba(0,0,0,0.5); 
+    }
 
     /* Imagem */
     .card-img-wrap { position: relative; width: 100%; height: 260px; overflow: hidden; flex-shrink: 0; }
@@ -120,15 +156,9 @@
     .thumb-design { background: linear-gradient(135deg, #0a0a1a 0%, #141428 60%, #1e1e3e 100%); }
     .thumb-influencer { background: linear-gradient(135deg, #1a0a28 0%, #2d1450 60%, #4a1f80 100%); }
 
-    /* Badge PROMPT top-left */
-    .card-badge { position: absolute; top: 12px; left: 12px; display: flex; align-items: center; gap: 5px; background: rgba(20,24,40,0.82); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; padding: 4px 10px; font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.85); letter-spacing: 0.8px; backdrop-filter: blur(8px); }
-    .card-badge svg { width: 12px; height: 12px; opacity: 0.7; }
-
     /* Bookmark top-right */
     .card-bookmark { position: absolute; top: 10px; right: 10px; width: 34px; height: 34px; border-radius: 10px; background: rgba(20,24,40,0.75); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(8px); transition: all 0.15s; }
     .card-pro-badge { position: absolute; top: 10px; left: 10px; padding: 4px 10px; border-radius: 6px; background: linear-gradient(135deg, var(--amber), var(--pink)); color: #08080a; font-size: 11px; font-weight: 800; letter-spacing: 0.5px; z-index: 5; }
-    .card-lock-overlay { position: absolute; inset: 0; background: rgba(8,11,20,0.85); backdrop-filter: blur(8px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: var(--text); font-size: 14px; font-weight: 700; z-index: 4; }
-    .card-lock-overlay svg { opacity: 0.6; }
     .card-bookmark:hover { background: rgba(255,255,255,0.12); }
     .card-bookmark svg { width: 16px; height: 16px; stroke: rgba(255,255,255,0.7); fill: none; }
     .card-bookmark.saved svg { fill: var(--amber); stroke: var(--amber); }
@@ -819,10 +849,6 @@ function renderGrid(){
       <div class="card-img-wrap">
         ${imgHtml}
         ${proBadge}
-        <div class="card-badge">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><polyline points="8 21 12 17 16 21"/></svg>
-          PROMPT
-        </div>
         <div class="card-bookmark ${saved?'saved':''}" onclick="toggleSave(${p.id},event)" title="Salvar">
           <svg viewBox="0 0 24 24" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
         </div>
