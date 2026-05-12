@@ -72,6 +72,25 @@ async function initDB() {
   await pool.query(`ALTER TABLE prompts ADD COLUMN IF NOT EXISTS image_url VARCHAR(500)`).catch(() => {});
   await pool.query(`ALTER TABLE prompts ADD COLUMN IF NOT EXISTS likes INTEGER DEFAULT 0`).catch(() => {});
 
+  // Criar tabela users
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      email VARCHAR(255) UNIQUE NOT NULL,
+      name VARCHAR(255),
+      password_hash VARCHAR(255),
+      is_subscriber BOOLEAN DEFAULT false,
+      plan VARCHAR(50),
+      subscribed_at TIMESTAMP,
+      subscription_expires_at TIMESTAMP,
+      kiwify_customer_id VARCHAR(255),
+      google_id VARCHAR(255),
+      created_at TIMESTAMP DEFAULT NOW()
+    )
+  `);
+  console.log('✅ Tabela users criada/verificada');
+
+
   const { rows } = await pool.query('SELECT COUNT(*) FROM prompts');
   if (parseInt(rows[0].count) === 0) {
     await pool.query(`
@@ -186,6 +205,137 @@ app.delete('/api/prompts/:id', async (req, res) => {
     await pool.query('DELETE FROM prompts WHERE id = $1', [req.params.id]);
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: 'Erro ao deletar prompt' }); }
+});
+
+// ─── USERS & AUTH ────────────────────────────────────────────
+
+// POST register
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { email, name, password } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email obrigatório' });
+    
+    // Verificar se já existe
+    const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+    if (existing.rows.length) return res.status(400).json({ error: 'Email já cadastrado' });
+    
+    // Hash básico (em produção use bcrypt)
+    const password_hash = password ? Buffer.from(password).toString('base64') : null;
+    
+    const { rows } = await pool.query(
+      'INSERT INTO users (email, name, password_hash) VALUES ($1, $2, $3) RETURNING id, email, name, is_subscriber, plan',
+      [email, name, password_hash]
+    );
+    res.json(rows[0]);
+  } catch (err) { 
+    console.error(err); 
+    res.status(500).json({ error: 'Erro ao cadastrar' }); 
+  }
+});
+
+// POST login
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email obrigatório' });
+    
+    const { rows } = await pool.query(
+      'SELECT id, email, name, is_subscriber, plan FROM users WHERE email = $1',
+      [email]
+    );
+    
+    if (!rows.length) return res.status(404).json({ error: 'Usuário não encontrado' });
+    
+    res.json(rows[0]);
+  } catch (err) { 
+    console.error(err); 
+    res.status(500).json({ error: 'Erro ao fazer login' }); 
+  }
+});
+
+// GET all users (admin)
+app.get('/api/users', async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT id, email, name, is_subscriber, plan, subscribed_at, created_at FROM users ORDER BY created_at DESC');
+    res.json(rows);
+  } catch (err) { 
+    console.error(err); 
+    res.status(500).json({ error: 'Erro ao listar usuários' }); 
+  }
+});
+
+// PUT update user subscription (admin manual)
+app.put('/api/users/:id/subscription', async (req, res) => {
+  try {
+    const { is_subscriber, plan } = req.body;
+    const subscribed_at = is_subscriber ? new Date() : null;
+    
+    const { rows } = await pool.query(
+      'UPDATE users SET is_subscriber = $1, plan = $2, subscribed_at = $3 WHERE id = $4 RETURNING *',
+      [is_subscriber, plan, subscribed_at, req.params.id]
+    );
+    
+    if (!rows.length) return res.status(404).json({ error: 'Usuário não encontrado' });
+    res.json(rows[0]);
+  } catch (err) { 
+    console.error(err); 
+    res.status(500).json({ error: 'Erro ao atualizar assinatura' }); 
+  }
+});
+
+// ─── KIWIFY WEBHOOK ──────────────────────────────────────────
+
+app.post('/api/webhook/kiwify', async (req, res) => {
+  try {
+    console.log('🔔 Webhook Kiwify recebido:', req.body);
+    
+    const { 
+      event, 
+      Customer: customer,
+      Product: product,
+      order_status,
+      subscription_status 
+    } = req.body;
+    
+    const email = customer?.email;
+    if (!email) {
+      console.log('⚠️ Webhook sem email');
+      return res.json({ success: true });
+    }
+    
+    // Eventos que ativam assinatura
+    if (event === 'order.paid' || order_status === 'paid' || subscription_status === 'active') {
+      console.log(`✅ Ativando assinatura para ${email}`);
+      
+      // Criar usuário se não existir
+      await pool.query(
+        `INSERT INTO users (email, name, is_subscriber, plan, subscribed_at, kiwify_customer_id)
+         VALUES ($1, $2, true, $3, NOW(), $4)
+         ON CONFLICT (email) 
+         DO UPDATE SET is_subscriber = true, plan = $3, subscribed_at = NOW(), kiwify_customer_id = $4`,
+        [email, customer?.name || email.split('@')[0], product?.name || 'kiwify', customer?.id]
+      );
+      
+      console.log(`💚 Assinatura ativada: ${email}`);
+    }
+    
+    // Eventos que cancelam assinatura
+    if (event === 'order.refunded' || subscription_status === 'canceled' || order_status === 'refunded') {
+      console.log(`❌ Cancelando assinatura para ${email}`);
+      
+      await pool.query(
+        'UPDATE users SET is_subscriber = false WHERE email = $1',
+        [email]
+      );
+      
+      console.log(`🔴 Assinatura cancelada: ${email}`);
+    }
+    
+    res.json({ success: true });
+  } catch (err) { 
+    console.error('❌ Erro no webhook:', err); 
+    res.status(500).json({ error: 'Erro ao processar webhook' }); 
+  }
 });
 
 // SPA fallback
