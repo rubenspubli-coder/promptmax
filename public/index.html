@@ -870,6 +870,13 @@ function canAccessPrompt(prompt){
 // ── API ──────────────────────────────────────────────────────
 async function api(method,path,body){
   const o={method,headers:{'Content-Type':'application/json'}};
+  
+  // Add user email to headers if logged in
+  const currentUser = JSON.parse(localStorage.getItem('ph_current_user') || 'null');
+  if (currentUser && currentUser.email) {
+    o.headers['x-user-email'] = currentUser.email;
+  }
+  
   if(body)o.body=JSON.stringify(body);
   const r=await fetch('/api'+path,o);
   if(!r.ok)throw new Error(await r.text());
@@ -1353,98 +1360,104 @@ if (searchInput) {
 // ==========================================
 
 // Load saved visual config on page load
-function loadVisualConfig() {
-  const config = JSON.parse(localStorage.getItem('ph_visual_config') || '{}');
-  
-  console.log('🔄 Loading visual config:', config);
-  
-  // Apply logo - ALWAYS
-  if (config.logo) {
-    const logoElements = document.querySelectorAll('.logo img, .logo svg');
-    logoElements.forEach(el => {
-      const parent = el.parentElement;
-      parent.innerHTML = `<img src="${config.logo}" alt="Logo" style="height: 30px; width: auto;">`;
-    });
-    console.log('✅ Logo applied');
-  }
-  
-  // Apply favicon - ALWAYS
-  if (config.favicon) {
-    let link = document.querySelector("link[rel*='icon']");
-    if (!link) {
-      link = document.createElement('link');
-      link.rel = 'icon';
-      document.head.appendChild(link);
+async function loadVisualConfig() {
+  try {
+    console.log('🔄 Loading visual config from database...');
+    
+    // Fetch config from database
+    const config = await api('GET', '/config');
+    console.log('✅ Config loaded from DB:', config);
+    
+    // Apply logo
+    if (config.logo_url) {
+      const logoElements = document.querySelectorAll('.logo img, .logo svg');
+      logoElements.forEach(el => {
+        const parent = el.parentElement;
+        parent.innerHTML = `<img src="${config.logo_url}" alt="Logo" style="height: 30px; width: auto;">`;
+      });
+      console.log('✅ Logo applied');
     }
-    link.href = config.favicon;
-    console.log('✅ Favicon applied');
+    
+    // Apply favicon
+    if (config.favicon_url) {
+      let link = document.querySelector("link[rel*='icon']");
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.head.appendChild(link);
+      }
+      link.href = config.favicon_url;
+      console.log('✅ Favicon applied');
+    }
+    
+    // Apply bullet text
+    if (config.bullet_text) {
+      const bulletEls = document.querySelectorAll('.hero-pill');
+      bulletEls.forEach(el => el.textContent = config.bullet_text);
+      console.log('✅ Bullet applied:', config.bullet_text);
+    }
+    
+    // Apply headline with Bebas Neue font structure
+    if (config.headline) {
+      const headlineEls = document.querySelectorAll('.hero h1');
+      headlineEls.forEach(el => {
+        const words = config.headline.split(' ');
+        const midPoint = Math.ceil(words.length / 2);
+        const line1 = words.slice(0, midPoint).join(' ');
+        const line2 = words.slice(midPoint).join(' ');
+        el.innerHTML = `<span class="l1">${line1}</span><span class="l2">${line2}</span>`;
+      });
+      console.log('✅ Headline applied:', config.headline);
+    }
+    
+    // Apply subheadline
+    if (config.subheadline) {
+      const subEls = document.querySelectorAll('.hero p');
+      subEls.forEach(el => el.textContent = config.subheadline);
+      console.log('✅ Subheadline applied:', config.subheadline);
+    }
+    
+    // Apply video
+    if (config.video_url) {
+      const vids = document.querySelectorAll('#hero-vid');
+      vids.forEach(vid => vid.src = config.video_url);
+      console.log('✅ Video applied');
+    }
+    
+    // Fill admin inputs if they exist (desktop only)
+    const configBullet = document.getElementById('config-bullet');
+    const configHeadline = document.getElementById('config-headline');
+    const configSubheadline = document.getElementById('config-subheadline');
+    const configVideoUrl = document.getElementById('config-video-url');
+    const previewLogo = document.getElementById('preview-logo');
+    const previewFavicon = document.getElementById('preview-favicon');
+    const previewVid = document.getElementById('preview-video');
+    const previewContainer = document.getElementById('video-preview-container');
+    
+    if (configBullet && config.bullet_text) configBullet.value = config.bullet_text;
+    if (configHeadline && config.headline) configHeadline.value = config.headline;
+    if (configSubheadline && config.subheadline) configSubheadline.value = config.subheadline;
+    if (configVideoUrl && config.video_url) configVideoUrl.value = config.video_url;
+    
+    if (previewLogo && config.logo_url) {
+      previewLogo.src = config.logo_url;
+      previewLogo.style.display = 'block';
+    }
+    
+    if (previewFavicon && config.favicon_url) {
+      previewFavicon.src = config.favicon_url;
+      previewFavicon.style.display = 'block';
+    }
+    
+    if (previewVid && config.video_url) {
+      previewVid.src = config.video_url;
+      if (previewContainer) previewContainer.style.display = 'block';
+    }
+    
+    console.log('✅ Visual config loaded successfully');
+  } catch (err) {
+    console.error('❌ Error loading config:', err);
   }
-  
-  // Apply bullet text - ALWAYS
-  if (config.bullet) {
-    const bulletEls = document.querySelectorAll('.hero-pill');
-    bulletEls.forEach(el => el.textContent = config.bullet);
-    console.log('✅ Bullet applied:', config.bullet);
-  }
-  
-  // Apply headline - ALWAYS with Bebas Neue font structure
-  if (config.headline) {
-    const headlineEls = document.querySelectorAll('.hero h1');
-    headlineEls.forEach(el => {
-      const words = config.headline.split(' ');
-      const midPoint = Math.ceil(words.length / 2);
-      const line1 = words.slice(0, midPoint).join(' ');
-      const line2 = words.slice(midPoint).join(' ');
-      el.innerHTML = `<span class="l1">${line1}</span><span class="l2">${line2}</span>`;
-    });
-    console.log('✅ Headline applied:', config.headline);
-  }
-  
-  // Apply subheadline - ALWAYS
-  if (config.subheadline) {
-    const subEls = document.querySelectorAll('.hero p');
-    subEls.forEach(el => el.textContent = config.subheadline);
-    console.log('✅ Subheadline applied:', config.subheadline);
-  }
-  
-  // Apply video - ALWAYS
-  if (config.videoUrl) {
-    const vids = document.querySelectorAll('#hero-vid');
-    vids.forEach(vid => vid.src = config.videoUrl);
-    console.log('✅ Video applied');
-  }
-  
-  // ONLY fill admin inputs if they exist (desktop only)
-  const configBullet = document.getElementById('config-bullet');
-  const configHeadline = document.getElementById('config-headline');
-  const configSubheadline = document.getElementById('config-subheadline');
-  const configVideoUrl = document.getElementById('config-video-url');
-  const previewLogo = document.getElementById('preview-logo');
-  const previewFavicon = document.getElementById('preview-favicon');
-  const previewVid = document.getElementById('preview-video');
-  const previewContainer = document.getElementById('video-preview-container');
-  
-  if (configBullet && config.bullet) configBullet.value = config.bullet;
-  if (configHeadline && config.headline) configHeadline.value = config.headline;
-  if (configSubheadline && config.subheadline) configSubheadline.value = config.subheadline;
-  if (configVideoUrl && config.videoUrl) configVideoUrl.value = config.videoUrl;
-  
-  if (previewLogo && config.logo) {
-    previewLogo.src = config.logo;
-    previewLogo.style.display = 'block';
-  }
-  
-  if (previewFavicon && config.favicon) {
-    previewFavicon.src = config.favicon;
-    previewFavicon.style.display = 'block';
-  }
-  
-  if (previewVid && config.videoUrl) {
-    previewVid.src = config.videoUrl;
-    if (previewContainer) previewContainer.style.display = 'block';
-  }
-  
-  console.log('✅ Visual config loaded successfully');
 }
 
 // Handle logo upload
@@ -1589,47 +1602,62 @@ function removeCustomVideo() {
 }
 
 // Save all visual configuration
-function saveVisualConfig() {
-  const config = JSON.parse(localStorage.getItem('ph_visual_config') || '{}');
-  
-  // Get text values
-  config.bullet = document.getElementById('config-bullet').value;
-  config.headline = document.getElementById('config-headline').value;
-  config.subheadline = document.getElementById('config-subheadline').value;
-  
-  // Logo and Favicon are already saved in handleLogoUpload/handleFaviconUpload
-  // But we ensure they persist here too
-  const previewLogo = document.getElementById('preview-logo');
-  const previewFavicon = document.getElementById('preview-favicon');
-  
-  if (previewLogo && previewLogo.src && previewLogo.src.startsWith('data:')) {
-    config.logo = previewLogo.src;
+async function saveVisualConfig() {
+  try {
+    console.log('💾 Salvando configurações no banco de dados...');
+    
+    // Get values from inputs
+    const bulletInput = document.getElementById('config-bullet');
+    const headlineInput = document.getElementById('config-headline');
+    const subheadlineInput = document.getElementById('config-subheadline');
+    const videoUrlInput = document.getElementById('config-video-url');
+    const previewLogo = document.getElementById('preview-logo');
+    const previewFavicon = document.getElementById('preview-favicon');
+    const previewVid = document.getElementById('preview-video');
+    
+    const config = {
+      bullet_text: bulletInput ? bulletInput.value : null,
+      headline: headlineInput ? headlineInput.value : null,
+      subheadline: subheadlineInput ? subheadlineInput.value : null,
+      video_url: null,
+      logo_url: null,
+      favicon_url: null
+    };
+    
+    // Get logo
+    if (previewLogo && previewLogo.src && previewLogo.src.startsWith('data:')) {
+      config.logo_url = previewLogo.src;
+    }
+    
+    // Get favicon
+    if (previewFavicon && previewFavicon.src && previewFavicon.src.startsWith('data:')) {
+      config.favicon_url = previewFavicon.src;
+    }
+    
+    // Get video
+    if (videoUrlInput && videoUrlInput.value) {
+      config.video_url = videoUrlInput.value;
+    } else if (previewVid && previewVid.src && previewVid.src.startsWith('data:')) {
+      config.video_url = previewVid.src;
+    }
+    
+    console.log('📝 Config to save:', config);
+    
+    // Save to database
+    await api('PUT', '/config', config);
+    
+    console.log('✅ Config saved to database!');
+    showToast('✅ Configurações salvas! Recarregando...', 'success');
+    
+    // Reload page to apply changes everywhere
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
+    
+  } catch (err) {
+    console.error('❌ Error saving config:', err);
+    showToast('❌ Erro ao salvar configurações', 'error');
   }
-  
-  if (previewFavicon && previewFavicon.src && previewFavicon.src.startsWith('data:')) {
-    config.favicon = previewFavicon.src;
-  }
-  
-  // Get video (URL or uploaded)
-  const videoUrl = document.getElementById('config-video-url').value;
-  const previewVid = document.getElementById('preview-video');
-  
-  if (videoUrl) {
-    config.videoUrl = videoUrl;
-  } else if (previewVid && previewVid.src && previewVid.src.startsWith('data:')) {
-    config.videoUrl = previewVid.src;
-  }
-  
-  // Save to localStorage
-  localStorage.setItem('ph_visual_config', JSON.stringify(config));
-  
-  // Apply changes immediately to ALL elements (desktop and mobile)
-  loadVisualConfig();
-  
-  // Force page reload to ensure mobile gets the updates
-  setTimeout(() => {
-    location.reload();
-  }, 500);
 }
 
 // Initialize on page load
