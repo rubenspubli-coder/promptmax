@@ -4,9 +4,71 @@ const cors = require('cors');
 const path = require('path');
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
+const crypto = require('crypto'); // For AES-256-GCM encryption
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// ─── ENCRYPTION CONFIG ────────────────────────────────────────
+// CRITICAL: Store this key in environment variable!
+const ENCRYPTION_KEY = process.env.PROMPT_ENCRYPTION_KEY || 'your-32-character-secret-key-here-change-this-in-production!!';
+const ALGORITHM = 'aes-256-gcm';
+const IV_LENGTH = 16;
+const SALT_LENGTH = 64;
+const TAG_LENGTH = 16;
+const TAG_POSITION = SALT_LENGTH + IV_LENGTH;
+const ENCRYPTED_POSITION = TAG_POSITION + TAG_LENGTH;
+
+// Generate encryption key from password (PBKDF2 for security)
+function getKey(salt) {
+  return crypto.pbkdf2Sync(ENCRYPTION_KEY, salt, 100000, 32, 'sha512');
+}
+
+// Encrypt PRO prompt text (AES-256-GCM)
+function encryptPrompt(text) {
+  if (!text) return null;
+  
+  const salt = crypto.randomBytes(SALT_LENGTH);
+  const iv = crypto.randomBytes(IV_LENGTH);
+  const key = getKey(salt);
+  
+  const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
+  const encrypted = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  
+  // Format: salt + iv + tag + encrypted
+  const result = Buffer.concat([salt, iv, tag, encrypted]).toString('base64');
+  
+  console.log('🔐 Prompt encrypted');
+  return result;
+}
+
+// Decrypt PRO prompt text (AES-256-GCM)
+function decryptPrompt(encryptedData) {
+  if (!encryptedData) return null;
+  
+  try {
+    const buffer = Buffer.from(encryptedData, 'base64');
+    
+    const salt = buffer.slice(0, SALT_LENGTH);
+    const iv = buffer.slice(SALT_LENGTH, TAG_POSITION);
+    const tag = buffer.slice(TAG_POSITION, ENCRYPTED_POSITION);
+    const encrypted = buffer.slice(ENCRYPTED_POSITION);
+    
+    const key = getKey(salt);
+    
+    const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
+    decipher.setAuthTag(tag);
+    
+    const decrypted = decipher.update(encrypted) + decipher.final('utf8');
+    
+    console.log('🔓 Prompt decrypted for subscriber');
+    return decrypted;
+  } catch (err) {
+    console.error('❌ Decryption failed:', err.message);
+    return '🔒 Erro ao desencriptar prompt';
+  }
+}
 
 // ─── Cloudinary config ────────────────────────────────────────
 cloudinary.config({
@@ -90,6 +152,28 @@ async function initDB() {
   `);
   console.log('✅ Tabela users criada/verificada');
 
+  // Criar tabela site_config para configurações visuais
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS site_config (
+      id INTEGER PRIMARY KEY DEFAULT 1,
+      logo_url TEXT,
+      favicon_url TEXT,
+      bullet_text VARCHAR(200),
+      headline VARCHAR(200),
+      subheadline VARCHAR(500),
+      video_url TEXT,
+      updated_at TIMESTAMP DEFAULT NOW()
+    )
+  `);
+
+  // Inserir configuração padrão se não existir
+  await pool.query(`
+    INSERT INTO site_config (id, bullet_text, headline, subheadline)
+    SELECT 1, 'Biblioteca completa de prompts', 'Dê asas a sua imaginação', 'Prompts profissionais para Gemini, Nano Banana e GPT2. Grátis pra começar.'
+    WHERE NOT EXISTS (SELECT 1 FROM site_config WHERE id = 1)
+  `);
+  console.log('✅ Tabela site_config criada/verificada');
+
 
   const { rows } = await pool.query('SELECT COUNT(*) FROM prompts');
   if (parseInt(rows[0].count) === 0) {
@@ -107,29 +191,90 @@ async function initDB() {
 
 // ─── ROTAS ────────────────────────────────────────────────────
 
-// GET todos os prompts
+// GET todos os prompts (com proteção PRO + desencriptação)
 app.get('/api/prompts', async (req, res) => {
   try {
     const { category, search, tipo } = req.query;
+    const userEmail = req.headers['x-user-email']; // Email do usuário logado
+    
     let query = 'SELECT * FROM prompts WHERE 1=1';
     const params = [];
     if (category && category !== 'all') { params.push(category); query += ` AND category = $${params.length}`; }
     if (tipo) { params.push(tipo); query += ` AND tipo = $${params.length}`; }
     if (search) { params.push(`%${search}%`); query += ` AND (title ILIKE $${params.length} OR description ILIKE $${params.length})`; }
     query += ' ORDER BY created_at DESC';
+    
     const { rows } = await pool.query(query, params);
-    res.json(rows);
-  } catch (err) { res.status(500).json({ error: 'Erro ao buscar prompts' }); }
+    
+    // Verificar se usuário é assinante
+    let isSubscriber = false;
+    if (userEmail) {
+      const userResult = await pool.query('SELECT is_subscriber FROM users WHERE email = $1', [userEmail]);
+      isSubscriber = userResult.rows.length > 0 && userResult.rows[0].is_subscriber;
+    }
+    
+    // Processar prompts PRO (desencriptar ou ocultar)
+    const filteredRows = rows.map(prompt => {
+      if (prompt.tipo === 'pro') {
+        if (isSubscriber) {
+          // Assinante: desencriptar prompt_text
+          return {
+            ...prompt,
+            prompt_text: decryptPrompt(prompt.prompt_text)
+          };
+        } else {
+          // Não-assinante: ocultar prompt_text
+          return {
+            ...prompt,
+            prompt_text: '🔒 Conteúdo exclusivo para assinantes PRO'
+          };
+        }
+      }
+      return prompt;
+    });
+    
+    res.json(filteredRows);
+  } catch (err) { 
+    console.error('Erro ao buscar prompts:', err);
+    res.status(500).json({ error: 'Erro ao buscar prompts' }); 
+  }
 });
 
-// GET prompt por ID
+// GET prompt por ID (com proteção PRO + desencriptação)
 app.get('/api/prompts/:id', async (req, res) => {
   try {
+    const userEmail = req.headers['x-user-email'];
+    
     await pool.query('UPDATE prompts SET views = views + 1 WHERE id = $1', [req.params.id]);
     const { rows } = await pool.query('SELECT * FROM prompts WHERE id = $1', [req.params.id]);
+    
     if (!rows.length) return res.status(404).json({ error: 'Prompt não encontrado' });
-    res.json(rows[0]);
-  } catch (err) { res.status(500).json({ error: 'Erro ao buscar prompt' }); }
+    
+    const prompt = rows[0];
+    
+    // Verificar se usuário é assinante
+    let isSubscriber = false;
+    if (userEmail) {
+      const userResult = await pool.query('SELECT is_subscriber FROM users WHERE email = $1', [userEmail]);
+      isSubscriber = userResult.rows.length > 0 && userResult.rows[0].is_subscriber;
+    }
+    
+    // Processar prompt PRO (desencriptar ou ocultar)
+    if (prompt.tipo === 'pro') {
+      if (isSubscriber) {
+        // Assinante: desencriptar prompt_text
+        prompt.prompt_text = decryptPrompt(prompt.prompt_text);
+      } else {
+        // Não-assinante: ocultar prompt_text
+        prompt.prompt_text = '🔒 Conteúdo exclusivo para assinantes PRO';
+      }
+    }
+    
+    res.json(prompt);
+  } catch (err) { 
+    console.error('Erro ao buscar prompt:', err);
+    res.status(500).json({ error: 'Erro ao buscar prompt' }); 
+  }
 });
 
 // GET stats
@@ -163,16 +308,29 @@ app.post('/api/prompts', upload.single('image'), async (req, res) => {
       } catch (uploadErr) {
         console.error('⚠️ Erro no upload Cloudinary:', uploadErr.message);
         console.log('Continuando sem imagem...');
-        // Não bloqueia a criação do prompt
       }
+    }
+
+    // ENCRYPT PRO prompts before saving to database
+    let finalPromptText = prompt_text;
+    if (tipo === 'pro') {
+      finalPromptText = encryptPrompt(prompt_text);
+      console.log('🔐 Prompt PRO encrypted before saving');
     }
 
     const { rows } = await pool.query(
       `INSERT INTO prompts (title, description, prompt_text, category, tool, tipo, image_url, is_new)
        VALUES ($1,$2,$3,$4,$5,$6,$7,true) RETURNING *`,
-      [title.trim(), description || '', prompt_text, category, tool || '', tipo || 'free', image_url]
+      [title.trim(), description || '', finalPromptText, category, tool || '', tipo || 'free', image_url]
     );
-    res.status(201).json(rows[0]);
+    
+    // Return decrypted version to creator
+    const result = rows[0];
+    if (result.tipo === 'pro') {
+      result.prompt_text = prompt_text; // Return original unencrypted text
+    }
+    
+    res.status(201).json(result);
   } catch (err) { console.error(err); res.status(500).json({ error: 'Erro ao criar prompt' }); }
 });
 
@@ -190,12 +348,26 @@ app.put('/api/prompts/:id', upload.single('image'), async (req, res) => {
       console.log('✅ Upload OK:', image_url);
     }
 
+    // ENCRYPT PRO prompts before saving to database
+    let finalPromptText = prompt_text;
+    if (tipo === 'pro') {
+      finalPromptText = encryptPrompt(prompt_text);
+      console.log('🔐 Prompt PRO encrypted before updating');
+    }
+
     const { rows } = await pool.query(
       `UPDATE prompts SET title=$1, description=$2, prompt_text=$3, category=$4, tool=$5, tipo=$6, image_url=$7
        WHERE id=$8 RETURNING *`,
-      [title, description, prompt_text, category, tool, tipo, image_url, req.params.id]
+      [title, description, finalPromptText, category, tool, tipo, image_url, req.params.id]
     );
-    res.json(rows[0]);
+    
+    // Return decrypted version to editor
+    const result = rows[0];
+    if (result.tipo === 'pro') {
+      result.prompt_text = prompt_text; // Return original unencrypted text
+    }
+    
+    res.json(result);
   } catch (err) { console.error(err); res.status(500).json({ error: 'Erro ao editar prompt' }); }
 });
 
@@ -335,6 +507,49 @@ app.post('/api/webhook/kiwify', async (req, res) => {
   } catch (err) { 
     console.error('❌ Erro no webhook:', err); 
     res.status(500).json({ error: 'Erro ao processar webhook' }); 
+  }
+});
+
+// ─── GET site config ──────────────────────────────────────────
+app.get('/api/config', async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT * FROM site_config WHERE id = 1');
+    if (rows.length === 0) {
+      return res.json({
+        bullet_text: 'Biblioteca completa de prompts',
+        headline: 'Dê asas a sua imaginação',
+        subheadline: 'Prompts profissionais para Gemini, Nano Banana e GPT2. Grátis pra começar.'
+      });
+    }
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('Erro ao buscar config:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── PUT site config (admin only) ─────────────────────────────
+app.put('/api/config', async (req, res) => {
+  try {
+    const { logo_url, favicon_url, bullet_text, headline, subheadline, video_url } = req.body;
+    
+    await pool.query(`
+      UPDATE site_config 
+      SET logo_url = $1, 
+          favicon_url = $2, 
+          bullet_text = $3, 
+          headline = $4, 
+          subheadline = $5, 
+          video_url = $6,
+          updated_at = NOW()
+      WHERE id = 1
+    `, [logo_url, favicon_url, bullet_text, headline, subheadline, video_url]);
+    
+    const { rows } = await pool.query('SELECT * FROM site_config WHERE id = 1');
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('Erro ao atualizar config:', err);
+    res.status(500).json({ error: err.message });
   }
 });
 
