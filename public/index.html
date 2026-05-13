@@ -401,7 +401,16 @@
   <nav>
     <div style="display: flex; align-items: center; gap: 20px; flex: 1;">
       <div class="logo" onclick="scrollToTop()">
-        <img src="logo-prompts-house.svg" alt="Prompts House" style="height: 30px; width: auto;">
+        <svg width="168" height="30" viewBox="0 0 168 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" style="stop-color:#f59e0b;stop-opacity:1" />
+              <stop offset="50%" style="stop-color:#ec4899;stop-opacity:1" />
+              <stop offset="100%" style="stop-color:#a855f7;stop-opacity:1" />
+            </linearGradient>
+          </defs>
+          <text x="0" y="22" font-family="'Inter', sans-serif" font-size="20" font-weight="800" fill="url(#logoGrad)">Prompts House</text>
+        </svg>
       </div>
       <div class="header-search">
         <div style="display: flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 20px; border: 1px solid var(--glass-border); background: var(--glass); backdrop-filter: blur(10px); min-width: 320px; max-width: 420px;">
@@ -577,18 +586,82 @@
         </div>
 
         <div id="s-config" style="display:none">
-          <div class="ah"><h2>Configurações</h2></div>
+          <div class="ah"><h2>Configurações Visuais</h2></div>
+          
+          <!-- LOGO E FAVICON -->
           <div class="form-panel">
-            <h3>Visibilidade</h3>
+            <h3>🎨 Marca e Identidade</h3>
+            
+            <div class="fg">
+              <label>Logotipo (SVG ou PNG)</label>
+              <div style="display:flex;gap:12px;align-items:center;margin-bottom:8px">
+                <img id="preview-logo" src="" style="max-height:40px;display:none;background:rgba(255,255,255,0.05);padding:8px;border-radius:8px">
+                <input type="file" id="upload-logo" accept=".svg,.png" style="display:none" onchange="handleLogoUpload(event)">
+                <button class="btn-pill" onclick="document.getElementById('upload-logo').click()">📤 Upload Logo</button>
+                <button class="btn-pill" onclick="removeCustomLogo()" style="background:rgba(255,80,80,0.1);color:#ff5050">🗑️ Remover</button>
+              </div>
+              <div style="font-size:12px;color:var(--muted)">SVG recomendado para melhor qualidade. Máx: 500KB</div>
+            </div>
+
+            <div class="fg">
+              <label>Favicon (PNG 32x32 ou 64x64)</label>
+              <div style="display:flex;gap:12px;align-items:center;margin-bottom:8px">
+                <img id="preview-favicon" src="" style="width:32px;height:32px;display:none;background:rgba(255,255,255,0.05);padding:4px;border-radius:4px">
+                <input type="file" id="upload-favicon" accept=".png,.ico" style="display:none" onchange="handleFaviconUpload(event)">
+                <button class="btn-pill" onclick="document.getElementById('upload-favicon').click()">📤 Upload Favicon</button>
+                <button class="btn-pill" onclick="removeCustomFavicon()" style="background:rgba(255,80,80,0.1);color:#ff5050">🗑️ Remover</button>
+              </div>
+              <div style="font-size:12px;color:var(--muted)">Formato PNG, 32x32px ou 64x64px. Máx: 100KB</div>
+            </div>
+          </div>
+
+          <!-- HERO SECTION -->
+          <div class="form-panel">
+            <h3>🎬 Hero Section</h3>
+            
+            <div class="fg">
+              <label>Bullet Text (texto pequeno acima do título)</label>
+              <input type="text" id="config-bullet" value="✨ Biblioteca completa de prompts" placeholder="✨ Biblioteca completa de prompts">
+              <div style="font-size:12px;color:var(--muted);margin-top:4px">Texto pequeno que aparece acima do headline principal</div>
+            </div>
+
+            <div class="fg">
+              <label>Headline Principal</label>
+              <input type="text" id="config-headline" value="Dê asas a sua imaginação" placeholder="Dê asas a sua imaginação">
+              <div style="font-size:12px;color:var(--muted);margin-top:4px">Título principal grande da Hero Section</div>
+            </div>
+
+            <div class="fg">
+              <label>SubHeadline (descrição)</label>
+              <input type="text" id="config-subheadline" value="Prompts profissionais para Gemini, Nano Banana e GPT2. Grátis pra começar." placeholder="Prompts profissionais...">
+              <div style="font-size:12px;color:var(--muted);margin-top:4px">Texto de descrição abaixo do título</div>
+            </div>
+
+            <div class="fg">
+              <label>Vídeo de Fundo</label>
+              <div style="display:flex;gap:8px;margin-bottom:8px">
+                <input type="text" id="config-video-url" placeholder="https://exemplo.com/video.mp4 ou deixe vazio para upload" style="flex:1">
+                <input type="file" id="upload-video" accept=".mp4,.webm" style="display:none" onchange="handleVideoUpload(event)">
+                <button class="btn-pill" onclick="document.getElementById('upload-video').click()">📤 Upload MP4</button>
+              </div>
+              <div style="font-size:12px;color:var(--muted)">Cole URL do vídeo OU faça upload de MP4/WebM. Máx: 50MB</div>
+              <div id="video-preview-container" style="margin-top:12px;display:none">
+                <video id="preview-video" style="width:100%;max-width:400px;border-radius:12px" muted loop autoplay></video>
+                <button class="btn-pill" onclick="removeCustomVideo()" style="margin-top:8px;background:rgba(255,80,80,0.1);color:#ff5050">🗑️ Remover Vídeo</button>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button class="btn-pub" onclick="saveVisualConfig()">💾 Salvar Configurações</button>
+            </div>
+          </div>
+
+          <!-- VISIBILIDADE -->
+          <div class="form-panel">
+            <h3>👁️ Visibilidade</h3>
             <div class="trow"><div><div class="tl">Prompts premium visíveis</div><div class="ts">Visitantes veem o título mas não o conteúdo</div></div><button class="tsw on" onclick="this.classList.toggle('on')"></button></div>
             <div class="trow"><div><div class="tl">Modo manutenção</div><div class="ts">Desativa acesso público temporariamente</div></div><button class="tsw" onclick="this.classList.toggle('on')"></button></div>
             <div class="trow"><div><div class="tl">Mostrar views nos cards</div><div class="ts">Exibe contador de views publicamente</div></div><button class="tsw on" onclick="this.classList.toggle('on')"></button></div>
-          </div>
-          <div class="form-panel">
-            <h3>Identidade</h3>
-            <div class="fg"><label>Nome do site</label><input value="Prompt House"></div>
-            <div class="fg"><label>Tagline</label><input value="A sua casa de Prompts"></div>
-            <div class="form-actions"><button class="btn-pub">Salvar</button></div>
           </div>
         </div>
 
@@ -1235,6 +1308,238 @@ if (searchInput) {
     handleSearch(e.target.value);
   });
 }
+
+// ==========================================
+// VISUAL CONFIG FUNCTIONS
+// ==========================================
+
+// Load saved visual config on page load
+function loadVisualConfig() {
+  const config = JSON.parse(localStorage.getItem('ph_visual_config') || '{}');
+  
+  // Apply logo
+  if (config.logo) {
+    const logoElement = document.querySelector('.logo img, .logo svg').parentElement;
+    logoElement.innerHTML = `<img src="${config.logo}" alt="Logo" style="height: 30px; width: auto;">`;
+    document.getElementById('preview-logo').src = config.logo;
+    document.getElementById('preview-logo').style.display = 'block';
+  }
+  
+  // Apply favicon
+  if (config.favicon) {
+    let link = document.querySelector("link[rel*='icon']");
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'icon';
+      document.head.appendChild(link);
+    }
+    link.href = config.favicon;
+    document.getElementById('preview-favicon').src = config.favicon;
+    document.getElementById('preview-favicon').style.display = 'block';
+  }
+  
+  // Apply texts
+  if (config.bullet) {
+    const bulletEl = document.querySelector('.hero-pill');
+    if (bulletEl) bulletEl.textContent = config.bullet;
+    document.getElementById('config-bullet').value = config.bullet;
+  }
+  
+  if (config.headline) {
+    const headlineEl = document.querySelector('.hero h1');
+    if (headlineEl) headlineEl.textContent = config.headline;
+    document.getElementById('config-headline').value = config.headline;
+  }
+  
+  if (config.subheadline) {
+    const subEl = document.querySelector('.hero p');
+    if (subEl) subEl.textContent = config.subheadline;
+    document.getElementById('config-subheadline').value = config.subheadline;
+  }
+  
+  // Apply video
+  if (config.videoUrl) {
+    const vid = document.getElementById('hero-vid');
+    if (vid) vid.src = config.videoUrl;
+    document.getElementById('config-video-url').value = config.videoUrl;
+    const previewVid = document.getElementById('preview-video');
+    previewVid.src = config.videoUrl;
+    document.getElementById('video-preview-container').style.display = 'block';
+  }
+}
+
+// Handle logo upload
+function handleLogoUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  // Validate file type
+  if (!file.type.match('image/(svg\\+xml|png)')) {
+    showToast('❌ Apenas SVG ou PNG', 'error');
+    return;
+  }
+  
+  // Validate file size (500KB)
+  if (file.size > 500 * 1024) {
+    showToast('❌ Arquivo muito grande. Máx: 500KB', 'error');
+    return;
+  }
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const dataUrl = e.target.result;
+    
+    // Update preview
+    document.getElementById('preview-logo').src = dataUrl;
+    document.getElementById('preview-logo').style.display = 'block';
+    
+    // Save to config
+    const config = JSON.parse(localStorage.getItem('ph_visual_config') || '{}');
+    config.logo = dataUrl;
+    localStorage.setItem('ph_visual_config', JSON.stringify(config));
+    
+    showToast('✅ Logo carregado! Clique em Salvar', 'success');
+  };
+  reader.readAsDataURL(file);
+}
+
+// Handle favicon upload
+function handleFaviconUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  // Validate file type
+  if (!file.type.match('image/(png|x-icon)')) {
+    showToast('❌ Apenas PNG ou ICO', 'error');
+    return;
+  }
+  
+  // Validate file size (100KB)
+  if (file.size > 100 * 1024) {
+    showToast('❌ Arquivo muito grande. Máx: 100KB', 'error');
+    return;
+  }
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const dataUrl = e.target.result;
+    
+    // Update preview
+    document.getElementById('preview-favicon').src = dataUrl;
+    document.getElementById('preview-favicon').style.display = 'block';
+    
+    // Save to config
+    const config = JSON.parse(localStorage.getItem('ph_visual_config') || '{}');
+    config.favicon = dataUrl;
+    localStorage.setItem('ph_visual_config', JSON.stringify(config));
+    
+    showToast('✅ Favicon carregado! Clique em Salvar', 'success');
+  };
+  reader.readAsDataURL(file);
+}
+
+// Handle video upload
+function handleVideoUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  // Validate file type
+  if (!file.type.match('video/(mp4|webm)')) {
+    showToast('❌ Apenas MP4 ou WebM', 'error');
+    return;
+  }
+  
+  // Validate file size (50MB)
+  if (file.size > 50 * 1024 * 1024) {
+    showToast('❌ Vídeo muito grande. Máx: 50MB', 'error');
+    return;
+  }
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const dataUrl = e.target.result;
+    
+    // Update preview
+    const previewVid = document.getElementById('preview-video');
+    previewVid.src = dataUrl;
+    document.getElementById('video-preview-container').style.display = 'block';
+    
+    // Update URL input
+    document.getElementById('config-video-url').value = '';
+    
+    showToast('✅ Vídeo carregado! Clique em Salvar', 'success');
+  };
+  reader.readAsDataURL(file);
+}
+
+// Remove custom logo
+function removeCustomLogo() {
+  const config = JSON.parse(localStorage.getItem('ph_visual_config') || '{}');
+  delete config.logo;
+  localStorage.setItem('ph_visual_config', JSON.stringify(config));
+  
+  document.getElementById('preview-logo').style.display = 'none';
+  document.getElementById('upload-logo').value = '';
+  
+  // Restore default logo
+  location.reload();
+  showToast('✅ Logo removido', 'success');
+}
+
+// Remove custom favicon
+function removeCustomFavicon() {
+  const config = JSON.parse(localStorage.getItem('ph_visual_config') || '{}');
+  delete config.favicon;
+  localStorage.setItem('ph_visual_config', JSON.stringify(config));
+  
+  document.getElementById('preview-favicon').style.display = 'none';
+  document.getElementById('upload-favicon').value = '';
+  
+  showToast('✅ Favicon removido', 'success');
+  location.reload();
+}
+
+// Remove custom video
+function removeCustomVideo() {
+  document.getElementById('config-video-url').value = '';
+  document.getElementById('preview-video').src = '';
+  document.getElementById('video-preview-container').style.display = 'none';
+  document.getElementById('upload-video').value = '';
+  
+  showToast('✅ Vídeo removido', 'success');
+}
+
+// Save all visual configuration
+function saveVisualConfig() {
+  const config = JSON.parse(localStorage.getItem('ph_visual_config') || '{}');
+  
+  // Get text values
+  config.bullet = document.getElementById('config-bullet').value;
+  config.headline = document.getElementById('config-headline').value;
+  config.subheadline = document.getElementById('config-subheadline').value;
+  
+  // Get video (URL or uploaded)
+  const videoUrl = document.getElementById('config-video-url').value;
+  const previewVid = document.getElementById('preview-video');
+  
+  if (videoUrl) {
+    config.videoUrl = videoUrl;
+  } else if (previewVid.src && previewVid.src.startsWith('data:')) {
+    config.videoUrl = previewVid.src;
+  }
+  
+  // Save to localStorage
+  localStorage.setItem('ph_visual_config', JSON.stringify(config));
+  
+  // Apply changes immediately
+  loadVisualConfig();
+  
+  showToast('✅ Configurações salvas com sucesso!', 'success');
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', loadVisualConfig);
+
 </script>
 </body>
 </html>
