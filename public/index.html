@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Prompt House — A sua casa de Prompts</title>
+  <title>Prompts House — A sua casa de Prompts</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Bebas+Neue&display=swap" rel="stylesheet">
   <style>
@@ -31,7 +31,7 @@
 
     /* NAV */
     nav { position: fixed; top: 0; left: 0; right: 0; z-index: 200; display: flex; align-items: center; justify-content: space-between; padding: 0 36px; height: 62px; background: rgba(8,11,20,0.65); border-bottom: 1px solid var(--glass-border); backdrop-filter: blur(24px); }
-    .logo { font-size: 19px; font-weight: 800; cursor: pointer; }
+    .logo { font-size: 19px; font-weight: 800; cursor: pointer; display: flex; align-items: center; }
     .logo em { font-style: normal; background: linear-gradient(90deg, var(--amber) 0%, var(--pink) 50%, var(--purple) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
     .nav-tabs { display: flex; gap: 4px; }
     .ntab { padding: 6px 18px; border-radius: 10px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid transparent; background: transparent; color: var(--muted); font-family: 'Inter', sans-serif; transition: all 0.15s; }
@@ -400,7 +400,9 @@
 <div class="app">
   <nav>
     <div style="display: flex; align-items: center; gap: 20px; flex: 1;">
-      <div class="logo" onclick="scrollToTop()">Prompt<em>House</em></div>
+      <div class="logo" onclick="scrollToTop()">
+        <img src="logo-prompts-house.svg" alt="Prompts House" style="height: 30px; width: auto;">
+      </div>
       <div class="header-search">
         <div style="display: flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 20px; border: 1px solid var(--glass-border); background: var(--glass); backdrop-filter: blur(10px); min-width: 320px; max-width: 420px;">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.38)" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
@@ -856,7 +858,7 @@ function renderGrid(){
       <div class="card-body">
         <div class="card-author-row">
           <div class="card-avatar">${initials}</div>
-          <span class="card-author-name">@prompthouse</span>
+          <span class="card-author-name">@promptshouse</span>
         </div>
         <div class="card-name">${p.title}</div>
         <div class="card-desc">${p.description||''}</div>
