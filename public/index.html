@@ -1167,8 +1167,8 @@ document.addEventListener('keydown',e=>{
 checkSubscription();
 loadPrompts();
 
-// Admin access via URL hash: https://prompthouse.up.railway.app/#admin
-if (window.location.hash === '#admin') {
+// Admin access via URL: https://promptshouse.com/admin OR https://promptshouse.com/#admin
+if (window.location.hash === '#admin' || window.location.pathname === '/admin') {
   switchView('admin');
 }
 
