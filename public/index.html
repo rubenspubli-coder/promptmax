@@ -803,6 +803,10 @@
   </button>
 </div>
 
+<div style="text-align: center; padding: 20px 16px 32px; font-size: 11px; color: rgba(255,255,255,0.25); font-weight: 400;">
+  Criado por Rubens Macedo
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1323,10 +1327,16 @@ function loadVisualConfig() {
   
   // Apply logo
   if (config.logo) {
-    const logoElement = document.querySelector('.logo img, .logo svg').parentElement;
-    logoElement.innerHTML = `<img src="${config.logo}" alt="Logo" style="height: 30px; width: auto;">`;
-    document.getElementById('preview-logo').src = config.logo;
-    document.getElementById('preview-logo').style.display = 'block';
+    const logoElement = document.querySelector('.logo img, .logo svg');
+    if (logoElement) {
+      const parent = logoElement.parentElement;
+      parent.innerHTML = `<img src="${config.logo}" alt="Logo" style="height: 30px; width: auto;">`;
+    }
+    const previewLogo = document.getElementById('preview-logo');
+    if (previewLogo) {
+      previewLogo.src = config.logo;
+      previewLogo.style.display = 'block';
+    }
   }
   
   // Apply favicon
@@ -1338,15 +1348,19 @@ function loadVisualConfig() {
       document.head.appendChild(link);
     }
     link.href = config.favicon;
-    document.getElementById('preview-favicon').src = config.favicon;
-    document.getElementById('preview-favicon').style.display = 'block';
+    const previewFavicon = document.getElementById('preview-favicon');
+    if (previewFavicon) {
+      previewFavicon.src = config.favicon;
+      previewFavicon.style.display = 'block';
+    }
   }
   
   // Apply texts
   if (config.bullet) {
     const bulletEl = document.querySelector('.hero-pill');
     if (bulletEl) bulletEl.textContent = config.bullet;
-    document.getElementById('config-bullet').value = config.bullet;
+    const configBullet = document.getElementById('config-bullet');
+    if (configBullet) configBullet.value = config.bullet;
   }
   
   if (config.headline) {
@@ -1359,23 +1373,29 @@ function loadVisualConfig() {
       const line2 = words.slice(midPoint).join(' ');
       headlineEl.innerHTML = `<span class="l1">${line1}</span><span class="l2">${line2}</span>`;
     }
-    document.getElementById('config-headline').value = config.headline;
+    const configHeadline = document.getElementById('config-headline');
+    if (configHeadline) configHeadline.value = config.headline;
   }
   
   if (config.subheadline) {
     const subEl = document.querySelector('.hero p');
     if (subEl) subEl.textContent = config.subheadline;
-    document.getElementById('config-subheadline').value = config.subheadline;
+    const configSubheadline = document.getElementById('config-subheadline');
+    if (configSubheadline) configSubheadline.value = config.subheadline;
   }
   
   // Apply video
   if (config.videoUrl) {
     const vid = document.getElementById('hero-vid');
     if (vid) vid.src = config.videoUrl;
-    document.getElementById('config-video-url').value = config.videoUrl;
+    const configVideoUrl = document.getElementById('config-video-url');
+    if (configVideoUrl) configVideoUrl.value = config.videoUrl;
     const previewVid = document.getElementById('preview-video');
-    previewVid.src = config.videoUrl;
-    document.getElementById('video-preview-container').style.display = 'block';
+    if (previewVid) {
+      previewVid.src = config.videoUrl;
+      const previewContainer = document.getElementById('video-preview-container');
+      if (previewContainer) previewContainer.style.display = 'block';
+    }
   }
 }
 
