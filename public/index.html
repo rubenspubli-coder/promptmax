@@ -1356,21 +1356,19 @@ if (searchInput) {
 function loadVisualConfig() {
   const config = JSON.parse(localStorage.getItem('ph_visual_config') || '{}');
   
-  // Apply logo
+  console.log('🔄 Loading visual config:', config);
+  
+  // Apply logo - ALWAYS
   if (config.logo) {
-    const logoElement = document.querySelector('.logo img, .logo svg');
-    if (logoElement) {
-      const parent = logoElement.parentElement;
+    const logoElements = document.querySelectorAll('.logo img, .logo svg');
+    logoElements.forEach(el => {
+      const parent = el.parentElement;
       parent.innerHTML = `<img src="${config.logo}" alt="Logo" style="height: 30px; width: auto;">`;
-    }
-    const previewLogo = document.getElementById('preview-logo');
-    if (previewLogo) {
-      previewLogo.src = config.logo;
-      previewLogo.style.display = 'block';
-    }
+    });
+    console.log('✅ Logo applied');
   }
   
-  // Apply favicon
+  // Apply favicon - ALWAYS
   if (config.favicon) {
     let link = document.querySelector("link[rel*='icon']");
     if (!link) {
@@ -1379,55 +1377,74 @@ function loadVisualConfig() {
       document.head.appendChild(link);
     }
     link.href = config.favicon;
-    const previewFavicon = document.getElementById('preview-favicon');
-    if (previewFavicon) {
-      previewFavicon.src = config.favicon;
-      previewFavicon.style.display = 'block';
-    }
+    console.log('✅ Favicon applied');
   }
   
-  // Apply texts
+  // Apply bullet text - ALWAYS
   if (config.bullet) {
-    const bulletEl = document.querySelector('.hero-pill');
-    if (bulletEl) bulletEl.textContent = config.bullet;
-    const configBullet = document.getElementById('config-bullet');
-    if (configBullet) configBullet.value = config.bullet;
+    const bulletEls = document.querySelectorAll('.hero-pill');
+    bulletEls.forEach(el => el.textContent = config.bullet);
+    console.log('✅ Bullet applied:', config.bullet);
   }
   
+  // Apply headline - ALWAYS with Bebas Neue font structure
   if (config.headline) {
-    const headlineEl = document.querySelector('.hero h1');
-    if (headlineEl) {
-      // Split headline into two lines and preserve font structure
+    const headlineEls = document.querySelectorAll('.hero h1');
+    headlineEls.forEach(el => {
       const words = config.headline.split(' ');
       const midPoint = Math.ceil(words.length / 2);
       const line1 = words.slice(0, midPoint).join(' ');
       const line2 = words.slice(midPoint).join(' ');
-      headlineEl.innerHTML = `<span class="l1">${line1}</span><span class="l2">${line2}</span>`;
-    }
-    const configHeadline = document.getElementById('config-headline');
-    if (configHeadline) configHeadline.value = config.headline;
+      el.innerHTML = `<span class="l1">${line1}</span><span class="l2">${line2}</span>`;
+    });
+    console.log('✅ Headline applied:', config.headline);
   }
   
+  // Apply subheadline - ALWAYS
   if (config.subheadline) {
-    const subEl = document.querySelector('.hero p');
-    if (subEl) subEl.textContent = config.subheadline;
-    const configSubheadline = document.getElementById('config-subheadline');
-    if (configSubheadline) configSubheadline.value = config.subheadline;
+    const subEls = document.querySelectorAll('.hero p');
+    subEls.forEach(el => el.textContent = config.subheadline);
+    console.log('✅ Subheadline applied:', config.subheadline);
   }
   
-  // Apply video
+  // Apply video - ALWAYS
   if (config.videoUrl) {
-    const vid = document.getElementById('hero-vid');
-    if (vid) vid.src = config.videoUrl;
-    const configVideoUrl = document.getElementById('config-video-url');
-    if (configVideoUrl) configVideoUrl.value = config.videoUrl;
-    const previewVid = document.getElementById('preview-video');
-    if (previewVid) {
-      previewVid.src = config.videoUrl;
-      const previewContainer = document.getElementById('video-preview-container');
-      if (previewContainer) previewContainer.style.display = 'block';
-    }
+    const vids = document.querySelectorAll('#hero-vid');
+    vids.forEach(vid => vid.src = config.videoUrl);
+    console.log('✅ Video applied');
   }
+  
+  // ONLY fill admin inputs if they exist (desktop only)
+  const configBullet = document.getElementById('config-bullet');
+  const configHeadline = document.getElementById('config-headline');
+  const configSubheadline = document.getElementById('config-subheadline');
+  const configVideoUrl = document.getElementById('config-video-url');
+  const previewLogo = document.getElementById('preview-logo');
+  const previewFavicon = document.getElementById('preview-favicon');
+  const previewVid = document.getElementById('preview-video');
+  const previewContainer = document.getElementById('video-preview-container');
+  
+  if (configBullet && config.bullet) configBullet.value = config.bullet;
+  if (configHeadline && config.headline) configHeadline.value = config.headline;
+  if (configSubheadline && config.subheadline) configSubheadline.value = config.subheadline;
+  if (configVideoUrl && config.videoUrl) configVideoUrl.value = config.videoUrl;
+  
+  if (previewLogo && config.logo) {
+    previewLogo.src = config.logo;
+    previewLogo.style.display = 'block';
+  }
+  
+  if (previewFavicon && config.favicon) {
+    previewFavicon.src = config.favicon;
+    previewFavicon.style.display = 'block';
+  }
+  
+  if (previewVid && config.videoUrl) {
+    previewVid.src = config.videoUrl;
+    if (previewContainer) previewContainer.style.display = 'block';
+  }
+  
+  console.log('✅ Visual config loaded successfully');
 }
 
 // Handle logo upload
