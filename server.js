@@ -533,22 +533,33 @@ app.put('/api/config', async (req, res) => {
   try {
     const { logo_url, favicon_url, bullet_text, headline, subheadline, video_url } = req.body;
     
+    console.log('📝 Saving config:', { logo_url: logo_url ? 'present' : 'null', favicon_url: favicon_url ? 'present' : 'null', bullet_text, headline, subheadline, video_url: video_url ? 'present' : 'null' });
+    
+    // Ensure site_config row exists
+    await pool.query(`
+      INSERT INTO site_config (id, bullet_text, headline, subheadline)
+      VALUES (1, 'Biblioteca completa de prompts', 'Dê asas a sua imaginação', 'Prompts profissionais para Gemini, Nano Banana e GPT2. Grátis pra começar.')
+      ON CONFLICT (id) DO NOTHING
+    `);
+    
+    // Update config
     await pool.query(`
       UPDATE site_config 
-      SET logo_url = $1, 
-          favicon_url = $2, 
-          bullet_text = $3, 
-          headline = $4, 
-          subheadline = $5, 
-          video_url = $6,
+      SET logo_url = COALESCE($1, logo_url), 
+          favicon_url = COALESCE($2, favicon_url), 
+          bullet_text = COALESCE($3, bullet_text), 
+          headline = COALESCE($4, headline), 
+          subheadline = COALESCE($5, subheadline), 
+          video_url = COALESCE($6, video_url),
           updated_at = NOW()
       WHERE id = 1
     `, [logo_url, favicon_url, bullet_text, headline, subheadline, video_url]);
     
     const { rows } = await pool.query('SELECT * FROM site_config WHERE id = 1');
+    console.log('✅ Config saved successfully');
     res.json(rows[0]);
   } catch (err) {
-    console.error('Erro ao atualizar config:', err);
+    console.error('❌ Erro ao atualizar config:', err);
     res.status(500).json({ error: err.message });
   }
 });
