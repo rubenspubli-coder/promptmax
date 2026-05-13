@@ -881,7 +881,7 @@ async function apiForm(method,path,formData){
 async function loadPrompts(){
   try{
     console.log('🔄 Carregando prompts do backend...');
-    allPrompts=await api('GET','/api/prompts');
+    allPrompts=await api('GET','/prompts');
     console.log('✅ Prompts carregados:', allPrompts.length, allPrompts);
     renderGrid();
     const views=allPrompts.reduce((a,p)=>a+(p.views||0),0);
@@ -1068,15 +1068,15 @@ function showSec(id,el){
 }
 
 async function loadStats(){
-  try{const s=await api('GET','/api/stats');document.getElementById('st-total').textContent=s.total;document.getElementById('st-free').textContent=s.free;document.getElementById('st-pro').textContent=s.pro;document.getElementById('st-views').textContent=s.views>=1000?(s.views/1000).toFixed(1)+'k':s.views;}catch(e){console.error('Erro ao carregar stats:',e);}
+  try{const s=await api('GET','/stats');document.getElementById('st-total').textContent=s.total;document.getElementById('st-free').textContent=s.free;document.getElementById('st-pro').textContent=s.pro;document.getElementById('st-views').textContent=s.views>=1000?(s.views/1000).toFixed(1)+'k':s.views;}catch(e){console.error('Erro ao carregar stats:',e);}
 }
 async function loadDashTable(){
   const tb=document.getElementById('dash-tbody');
-  try{const list=await api('GET','/api/prompts');tb.innerHTML=list.slice(0,8).map(trow).join('')||noRows();}catch(e){tb.innerHTML=noRows('Erro ao carregar');}
+  try{const list=await api('GET','/prompts');tb.innerHTML=list.slice(0,8).map(trow).join('')||noRows();}catch(e){tb.innerHTML=noRows('Erro ao carregar');}
 }
 async function loadManage(){
   const tb=document.getElementById('manage-tbody');
-  try{const list=await api('GET','/api/prompts');tb.innerHTML=list.map(trow).join('')||noRows();}catch(e){}
+  try{const list=await api('GET','/prompts');tb.innerHTML=list.map(trow).join('')||noRows();}catch(e){}
 }
 function trow(p){return`<tr><td style="font-weight:600">${p.title}</td><td style="color:rgba(255,255,255,.45)">${CATS[p.category]||p.category}</td><td><span class="b${p.tipo==='pro'?'p':'f'}">${p.tipo==='pro'?'PRO':'GRÁTIS'}</span></td><td style="color:rgba(255,255,255,.45)">${fv(p.views)}</td><td><div style="display:flex;gap:6px"><button class="tbtn edit" onclick="openEdit(${p.id},event)">Editar</button><button class="tbtn del" onclick="delPrompt(${p.id},event)">Excluir</button></div></td></tr>`;}
 function noRows(m='Nenhum prompt ainda.'){return`<tr><td colspan="5" style="text-align:center;color:rgba(255,255,255,.3);padding:28px">${m}</td></tr>`;}
