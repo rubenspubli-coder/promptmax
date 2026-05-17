@@ -169,6 +169,7 @@ async function initDB() {
       bullet_text VARCHAR(200),
       headline VARCHAR(200),
       subheadline VARCHAR(500),
+      hero_font VARCHAR(100) DEFAULT 'Bebas Neue',
       video_url TEXT,
       updated_at TIMESTAMP DEFAULT NOW()
     )
@@ -180,6 +181,7 @@ async function initDB() {
     SELECT 1, 'Biblioteca completa de prompts', 'Dê asas a sua imaginação', 'Prompts profissionais para Gemini, Nano Banana e GPT2. Grátis pra começar.'
     WHERE NOT EXISTS (SELECT 1 FROM site_config WHERE id = 1)
   `);
+  await pool.query(`ALTER TABLE site_config ADD COLUMN IF NOT EXISTS hero_font VARCHAR(100) DEFAULT 'Bebas Neue'`);
   console.log('✅ Tabela site_config criada/verificada');
 
 
@@ -543,7 +545,7 @@ app.put('/api/config', async (req, res) => {
   console.log('📦 Body:', req.body);
   
   try {
-    const { logo_url, favicon_url, bullet_text, headline, subheadline, video_url } = req.body;
+    const { logo_url, favicon_url, bullet_text, headline, subheadline, hero_font, video_url } = req.body;
     
     console.log('📝 Saving config:', { 
       logo_url: logo_url ? `present (${logo_url.length} chars)` : 'null', 
@@ -566,16 +568,17 @@ app.put('/api/config', async (req, res) => {
     // Update config
     console.log('🔧 Updating config...');
     await pool.query(`
-      UPDATE site_config 
-      SET logo_url = COALESCE($1, logo_url), 
-          favicon_url = COALESCE($2, favicon_url), 
-          bullet_text = COALESCE($3, bullet_text), 
-          headline = COALESCE($4, headline), 
-          subheadline = COALESCE($5, subheadline), 
-          video_url = COALESCE($6, video_url),
+      UPDATE site_config
+      SET logo_url = COALESCE($1, logo_url),
+          favicon_url = COALESCE($2, favicon_url),
+          bullet_text = COALESCE($3, bullet_text),
+          headline = COALESCE($4, headline),
+          subheadline = COALESCE($5, subheadline),
+          hero_font = COALESCE($6, hero_font),
+          video_url = COALESCE($7, video_url),
           updated_at = NOW()
       WHERE id = 1
-    `, [logo_url, favicon_url, bullet_text, headline, subheadline, video_url]);
+    `, [logo_url, favicon_url, bullet_text, headline, subheadline, hero_font, video_url]);
     console.log('✅ Config updated');
     
     const { rows } = await pool.query('SELECT * FROM site_config WHERE id = 1');

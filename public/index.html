@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Prompts House — A sua casa de Prompts</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Bebas+Neue&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Bebas+Neue&family=Quicksand:wght@600;700&family=Montserrat:wght@700;800&family=Poppins:wght@600;700;800&family=Raleway:wght@700;800&family=Oswald:wght@500;600;700&family=Playfair+Display:wght@700;800&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -639,6 +639,22 @@
               <label>SubHeadline (descrição)</label>
               <input type="text" id="config-subheadline" value="Prompts profissionais para Gemini, Nano Banana e GPT2. Grátis pra começar." placeholder="Prompts profissionais...">
               <div style="font-size:12px;color:var(--muted);margin-top:4px">Texto de descrição abaixo do título</div>
+            </div>
+
+            <div class="fg">
+              <label>Fonte da Headline</label>
+              <select id="config-font">
+                <option value="Bebas Neue">Bebas Neue (atual)</option>
+                <option value="Quicksand">Quicksand</option>
+                <option value="Montserrat">Montserrat</option>
+                <option value="Poppins">Poppins</option>
+                <option value="Raleway">Raleway</option>
+                <option value="Oswald">Oswald</option>
+                <option value="Playfair Display">Playfair Display</option>
+                <option value="Nunito">Nunito</option>
+                <option value="Inter">Inter</option>
+              </select>
+              <div style="font-size:12px;color:var(--muted);margin-top:4px">Fonte usada no título principal do hero</div>
             </div>
 
             <div class="fg">
@@ -1416,6 +1432,14 @@ async function loadVisualConfig() {
       subEls.forEach(el => el.textContent = config.subheadline);
       console.log('✅ Subheadline applied:', config.subheadline);
     }
+
+    // Apply hero font
+    if (config.hero_font) {
+      document.querySelectorAll('.hero h1 .l1, .hero h1 .l2').forEach(el => {
+        el.style.fontFamily = `'${config.hero_font}', sans-serif`;
+      });
+      console.log('✅ Hero font applied:', config.hero_font);
+    }
     
     // Apply video
     if (config.video_url) {
@@ -1438,6 +1462,8 @@ async function loadVisualConfig() {
     if (configHeadline && config.headline) configHeadline.value = config.headline;
     if (configSubheadline && config.subheadline) configSubheadline.value = config.subheadline;
     if (configVideoUrl && config.video_url) configVideoUrl.value = config.video_url;
+    const configFont = document.getElementById('config-font');
+    if (configFont && config.hero_font) configFont.value = config.hero_font;
     
     if (previewLogo && config.logo_url) {
       previewLogo.src = config.logo_url;
@@ -1610,6 +1636,7 @@ async function saveVisualConfig() {
     const bulletInput = document.getElementById('config-bullet');
     const headlineInput = document.getElementById('config-headline');
     const subheadlineInput = document.getElementById('config-subheadline');
+    const fontInput = document.getElementById('config-font');
     const videoUrlInput = document.getElementById('config-video-url');
     const previewLogo = document.getElementById('preview-logo');
     const previewFavicon = document.getElementById('preview-favicon');
@@ -1619,6 +1646,7 @@ async function saveVisualConfig() {
       bullet_text: bulletInput ? bulletInput.value : null,
       headline: headlineInput ? headlineInput.value : null,
       subheadline: subheadlineInput ? subheadlineInput.value : null,
+      hero_font: fontInput ? fontInput.value : null,
       video_url: null,
       logo_url: null,
       favicon_url: null
