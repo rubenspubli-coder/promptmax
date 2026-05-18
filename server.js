@@ -568,11 +568,18 @@ app.post('/api/auth/forgot-password', async (req, res) => {
 // GET all users (admin)
 app.get('/api/users', async (req, res) => {
   try {
-    const { rows } = await pool.query('SELECT id, email, name, is_subscriber, plan, subscribed_at, created_at FROM users ORDER BY created_at DESC');
+    const { rows } = await pool.query(`
+      SELECT
+        id, email, name, is_subscriber, plan, created_at,
+        COALESCE(subscribed_at, NULL) AS subscribed_at,
+        COALESCE(subscription_expires_at, NULL) AS subscription_expires_at
+      FROM users
+      ORDER BY created_at DESC
+    `);
     res.json(rows);
-  } catch (err) { 
-    console.error(err); 
-    res.status(500).json({ error: 'Erro ao listar usuários' }); 
+  } catch (err) {
+    console.error('❌ /api/users error:', err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 
