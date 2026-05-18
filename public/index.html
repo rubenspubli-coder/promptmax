@@ -1015,13 +1015,21 @@ function logout(){
   showToast('Você saiu da conta.', 'info');
 }
 
-function openProfileModal(){
+async function openProfileModal(){
   const user = JSON.parse(localStorage.getItem('ph_current_user') || 'null');
   if(!user) return;
   document.getElementById('profile-name').value = user.name || '';
-  const cancelWrap = document.getElementById('profile-cancel-wrap');
-  if(cancelWrap) cancelWrap.style.display = user.is_subscriber ? 'block' : 'none';
   document.getElementById('profile-modal').classList.add('open');
+  // Busca status real do servidor para garantir dado atualizado
+  try {
+    const fresh = await api('GET', '/auth/me');
+    if(fresh) {
+      localStorage.setItem('ph_current_user', JSON.stringify(fresh));
+      isSubscriber = fresh.is_subscriber === true;
+    }
+    const cancelWrap = document.getElementById('profile-cancel-wrap');
+    if(cancelWrap) cancelWrap.style.display = isSubscriber ? 'block' : 'none';
+  } catch {}
 }
 
 async function saveProfile(){
