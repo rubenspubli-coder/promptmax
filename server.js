@@ -603,24 +603,42 @@ app.post('/api/auth/cancel-subscription', async (req, res) => {
 
     if (!user.is_subscriber) return res.status(400).json({ error: 'Você não possui assinatura ativa' });
 
-    // Tentar cancelar na Kiwify via API
-    const kiwifyToken = process.env.KIWIFY_API_TOKEN;
-    const subId = user.kiwify_subscription_id;
-    if (kiwifyToken && subId) {
+    // Tentar cancelar na Kiwify via API (OAuth 2.0)
+    const clientId     = process.env.KIWIFY_CLIENT_ID;
+    const clientSecret = process.env.KIWIFY_CLIENT_SECRET;
+    const accountId    = process.env.KIWIFY_ACCOUNT_ID;
+    const subId        = user.kiwify_subscription_id;
+
+    if (clientId && clientSecret && subId) {
       try {
-        const kiwifyRes = await fetch(`https://api.kiwify.com.br/v1/subscriptions/${subId}/cancel`, {
+        // 1. Obter access_token
+        const tokenRes = await fetch('https://api.kiwify.com.br/oauth/token', {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${kiwifyToken}`,
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ client_id: clientId, client_secret: clientSecret, grant_type: 'client_credentials' }),
         });
-        console.log(`🔔 Kiwify cancel response: ${kiwifyRes.status}`);
+        const tokenData = await tokenRes.json();
+        const accessToken = tokenData.access_token;
+
+        if (accessToken) {
+          // 2. Cancelar assinatura
+          const cancelRes = await fetch(`https://api.kiwify.com.br/v1/subscriptions/${subId}/cancel`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json',
+              ...(accountId ? { 'account-id': accountId } : {}),
+            },
+          });
+          console.log(`🔔 Kiwify cancel response: ${cancelRes.status}`);
+        } else {
+          console.log(`⚠️ Kiwify não retornou access_token:`, tokenData);
+        }
       } catch (kErr) {
-        console.log(`⚠️ Kiwify API error (cancelamento local será aplicado): ${kErr.message}`);
+        console.log(`⚠️ Kiwify API error (cancelamento local aplicado): ${kErr.message}`);
       }
     } else {
-      console.log(`⚠️ Cancelamento sem Kiwify API (KIWIFY_API_TOKEN ou subscription_id ausente)`);
+      console.log(`⚠️ Cancelamento sem Kiwify API (vars ausentes ou subscription_id não registrado)`);
     }
 
     // Atualizar no banco
