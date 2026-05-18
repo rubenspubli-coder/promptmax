@@ -421,6 +421,7 @@
     </div>
     <div class="nav-right">
       <button class="btn-ver-site" id="btn-ver-site" onclick="switchView('home')" style="display:none;padding:7px 18px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--glass-border);background:var(--glass);color:var(--text);font-family:'Inter',sans-serif;transition:all 0.15s;">← Ver Site</button>
+      <button id="btn-admin-logout" onclick="adminLogout()" style="display:none;padding:7px 18px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid rgba(239,68,68,0.4);background:rgba(239,68,68,0.12);color:#f87171;font-family:'Inter',sans-serif;transition:all 0.15s;">Sair do Admin</button>
       <button class="btn-assinar" onclick="openSubModal()">Assinar</button>
       <!-- Botões visitante (não logado) -->
       <button class="btn-icon" id="btn-nav-login" title="Login" onclick="openAuthModal('login')">
@@ -1210,7 +1211,15 @@ function switchView(v){
   if(navEl)navEl.classList.add('active');
   const btnVerSite=document.getElementById('btn-ver-site');
   if(btnVerSite)btnVerSite.style.display=v==='admin'?'block':'none';
+  const btnAdminLogout=document.getElementById('btn-admin-logout');
+  if(btnAdminLogout)btnAdminLogout.style.display=v==='admin'?'block':'none';
   if(v==='admin'){loadStats();loadDashTable();}
+}
+
+function adminLogout(){
+  localStorage.removeItem('ph_admin_token');
+  switchView('home');
+  showToast('Sessão admin encerrada.','success');
 }
 
 function isAdminAuthed(){
