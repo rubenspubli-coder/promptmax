@@ -437,6 +437,7 @@
         </button>
         <div id="account-menu" style="display:none;position:absolute;right:0;top:46px;background:rgba(12,15,28,0.98);border:1px solid var(--glass-border);border-radius:14px;padding:8px;min-width:180px;backdrop-filter:blur(20px);z-index:400">
           <div id="account-name" style="padding:8px 12px;font-size:12px;color:var(--muted);border-bottom:1px solid rgba(255,255,255,0.07);margin-bottom:4px"></div>
+          <button onclick="openProfileModal();toggleAccountMenu()" style="width:100%;text-align:left;padding:9px 12px;border-radius:9px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:transparent;color:var(--text);transition:background 0.15s" onmouseover="this.style.background='rgba(255,255,255,0.07)'" onmouseout="this.style.background='transparent'">✏️ Editar Perfil</button>
           <button onclick="document.getElementById('change-pass-modal').classList.add('open');toggleAccountMenu()" style="width:100%;text-align:left;padding:9px 12px;border-radius:9px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:transparent;color:var(--text);transition:background 0.15s" onmouseover="this.style.background='rgba(255,255,255,0.07)'" onmouseout="this.style.background='transparent'">🔑 Trocar Senha</button>
           <button onclick="logout()" style="width:100%;text-align:left;padding:9px 12px;border-radius:9px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:transparent;color:#f87171;transition:background 0.15s" onmouseover="this.style.background='rgba(248,113,113,0.08)'" onmouseout="this.style.background='transparent'">↩ Sair</button>
         </div>
@@ -847,6 +848,27 @@
   </div>
 </div>
 
+<!-- MODAL EDITAR PERFIL -->
+<div class="modal-overlay" id="profile-modal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-top">
+      <div><div class="modal-cat">MINHA CONTA</div><div class="modal-title" style="font-size:22px">Editar Perfil</div></div>
+      <button class="modal-close" onclick="document.getElementById('profile-modal').classList.remove('open')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="auth-fg" style="margin-bottom:20px">
+        <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Seu Nome</label>
+        <input type="text" id="profile-name" placeholder="Digite seu nome" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:12px;padding:11px 14px;color:var(--text);font-size:13px;outline:none;margin-top:6px;font-family:'Inter',sans-serif">
+      </div>
+      <button onclick="saveProfile()" style="width:100%;padding:13px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;border:none;background:linear-gradient(90deg,var(--amber),var(--pink));color:#08080a;margin-bottom:16px">Salvar alterações</button>
+      <div id="profile-cancel-wrap" style="display:none;padding-top:14px;border-top:1px solid rgba(255,255,255,0.07);text-align:center">
+        <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Assinatura ativa</p>
+        <button onclick="confirmCancelSubscription()" style="padding:7px 16px;border-radius:9px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid rgba(239,68,68,0.35);background:rgba(239,68,68,0.08);color:#f87171;font-family:'Inter',sans-serif;transition:all 0.15s">Cancelar Assinatura</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL -->
 <div class="modal-overlay" id="modal" onclick="maybeClose(event)">
   <div class="modal">
@@ -991,6 +1013,44 @@ function logout(){
   updateNavForUser(null);
   renderGrid();
   showToast('Você saiu da conta.', 'info');
+}
+
+function openProfileModal(){
+  const user = JSON.parse(localStorage.getItem('ph_current_user') || 'null');
+  if(!user) return;
+  document.getElementById('profile-name').value = user.name || '';
+  const cancelWrap = document.getElementById('profile-cancel-wrap');
+  if(cancelWrap) cancelWrap.style.display = user.is_subscriber ? 'block' : 'none';
+  document.getElementById('profile-modal').classList.add('open');
+}
+
+async function saveProfile(){
+  const name = document.getElementById('profile-name').value.trim();
+  if(!name){ showToast('Digite seu nome.', 'error'); return; }
+  try {
+    const updated = await api('PUT', '/auth/profile', { name });
+    const user = JSON.parse(localStorage.getItem('ph_current_user') || '{}');
+    user.name = updated.name;
+    localStorage.setItem('ph_current_user', JSON.stringify(user));
+    document.getElementById('account-name').textContent = updated.name;
+    document.getElementById('profile-modal').classList.remove('open');
+    showToast('Nome atualizado! ✓', 'success');
+  } catch(err){ showToast('Erro ao salvar: ' + err.message, 'error'); }
+}
+
+async function confirmCancelSubscription(){
+  const ok = confirm('Tem certeza que deseja cancelar sua assinatura?\n\nVocê perderá o acesso aos prompts premium e receberá um email de confirmação.');
+  if(!ok) return;
+  try {
+    await api('POST', '/auth/cancel-subscription', {});
+    const user = JSON.parse(localStorage.getItem('ph_current_user') || '{}');
+    user.is_subscriber = false;
+    localStorage.setItem('ph_current_user', JSON.stringify(user));
+    isSubscriber = false;
+    document.getElementById('profile-modal').classList.remove('open');
+    renderGrid();
+    showToast('Assinatura cancelada. Você receberá um email de confirmação.', 'info');
+  } catch(err){ showToast('Erro ao cancelar: ' + err.message, 'error'); }
 }
 
 function showUpgradeBanner(){

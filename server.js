@@ -206,6 +206,7 @@ async function initDB() {
     `ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id VARCHAR(255)`,
     `ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token VARCHAR(64)`,
     `ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expires TIMESTAMP`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS kiwify_subscription_id VARCHAR(255)`,
   ];
   for (const sql of userMigrations) {
     await pool.query(sql).catch(e => console.log(`⚠️ Migration skip: ${e.message}`));
@@ -571,6 +572,94 @@ app.post('/api/auth/forgot-password', async (req, res) => {
   }
 });
 
+// PUT /api/auth/profile — atualizar nome do usuário
+app.put('/api/auth/profile', async (req, res) => {
+  try {
+    const email = req.headers['x-user-email'];
+    if (!email) return res.status(401).json({ error: 'Não autenticado' });
+    const { name } = req.body;
+    if (!name || !name.trim()) return res.status(400).json({ error: 'Nome obrigatório' });
+    const { rows } = await pool.query(
+      'UPDATE users SET name = $1 WHERE email = $2 RETURNING id, email, name, is_subscriber, plan',
+      [name.trim(), email]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Usuário não encontrado' });
+    res.json(rows[0]);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// POST /api/auth/cancel-subscription — cancelar assinatura
+app.post('/api/auth/cancel-subscription', async (req, res) => {
+  try {
+    const email = req.headers['x-user-email'];
+    if (!email) return res.status(401).json({ error: 'Não autenticado' });
+
+    const { rows } = await pool.query(
+      'SELECT id, name, is_subscriber, kiwify_subscription_id FROM users WHERE email = $1',
+      [email]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Usuário não encontrado' });
+    const user = rows[0];
+
+    if (!user.is_subscriber) return res.status(400).json({ error: 'Você não possui assinatura ativa' });
+
+    // Tentar cancelar na Kiwify via API
+    const kiwifyToken = process.env.KIWIFY_API_TOKEN;
+    const subId = user.kiwify_subscription_id;
+    if (kiwifyToken && subId) {
+      try {
+        const kiwifyRes = await fetch(`https://api.kiwify.com.br/v1/subscriptions/${subId}/cancel`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${kiwifyToken}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        console.log(`🔔 Kiwify cancel response: ${kiwifyRes.status}`);
+      } catch (kErr) {
+        console.log(`⚠️ Kiwify API error (cancelamento local será aplicado): ${kErr.message}`);
+      }
+    } else {
+      console.log(`⚠️ Cancelamento sem Kiwify API (KIWIFY_API_TOKEN ou subscription_id ausente)`);
+    }
+
+    // Atualizar no banco
+    await pool.query(
+      'UPDATE users SET is_subscriber = false, subscription_expires_at = NOW() WHERE email = $1',
+      [email]
+    );
+
+    // Enviar email de confirmação
+    await sendEmail({
+      to: email,
+      subject: 'Sua assinatura do Prompts House foi cancelada',
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;background:#080b14;color:#fff;border-radius:16px;overflow:hidden">
+          <div style="padding:32px;background:linear-gradient(135deg,#374151,#1f2937);text-align:center">
+            <h1 style="margin:0;font-size:24px;color:#fff">Prompts House</h1>
+            <p style="margin:8px 0 0;color:rgba(255,255,255,.7)">Cancelamento de assinatura</p>
+          </div>
+          <div style="padding:32px">
+            <p style="font-size:16px">Olá, <strong>${user.name || email}</strong>!</p>
+            <p>Sua assinatura do <strong>Prompts House</strong> foi cancelada com sucesso.</p>
+            <p style="color:#9ca3af;font-size:14px">Você perde o acesso aos prompts premium imediatamente. Se mudar de ideia, é só assinar novamente.</p>
+            <div style="text-align:center;margin:28px 0">
+              <a href="https://promptshouse.com" style="background:linear-gradient(90deg,#f59e0b,#ec4899);color:#08080a;padding:14px 32px;border-radius:50px;text-decoration:none;font-weight:700;font-size:15px">Ver planos →</a>
+            </div>
+            <hr style="border:1px solid rgba(255,255,255,.1);margin:24px 0">
+            <p style="color:#6b7280;font-size:12px;text-align:center">Prompts House · Todos os direitos reservados</p>
+          </div>
+        </div>
+      `,
+    });
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── ADMIN AUTH (server-side) ─────────────────────────────────
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'pablo2025';
 // Token is a signed HMAC so the server can verify it without a DB lookup
@@ -659,6 +748,8 @@ app.post('/api/webhook/kiwify', async (req, res) => {
     const isActivation = event === 'order.paid' || order_status === 'paid' || subscription_status === 'active';
     const isCancellation = event === 'order.refunded' || subscription_status === 'canceled' || order_status === 'refunded';
 
+    const subscriptionId = req.body?.Subscription?.id || req.body?.subscription?.id || null;
+
     if (isActivation) {
       const plan = detectPlan(product);
       const planDays = KIWIFY_PLANS[plan].days;
@@ -675,15 +766,15 @@ app.post('/api/webhook/kiwify', async (req, res) => {
 
       if (isNewUser) {
         await pool.query(
-          `INSERT INTO users (email, name, password_hash, is_subscriber, plan, subscribed_at, subscription_expires_at, kiwify_customer_id)
-           VALUES ($1, $2, $3, true, $4, NOW(), $5, $6)`,
-          [email, name, passwordHash, plan, expiresAt, customer?.id]
+          `INSERT INTO users (email, name, password_hash, is_subscriber, plan, subscribed_at, subscription_expires_at, kiwify_customer_id, kiwify_subscription_id)
+           VALUES ($1, $2, $3, true, $4, NOW(), $5, $6, $7)`,
+          [email, name, passwordHash, plan, expiresAt, customer?.id, subscriptionId]
         );
       } else {
         await pool.query(
           `UPDATE users SET is_subscriber = true, plan = $1, subscribed_at = NOW(),
-           subscription_expires_at = $2, kiwify_customer_id = $3 WHERE email = $4`,
-          [plan, expiresAt, customer?.id, email]
+           subscription_expires_at = $2, kiwify_customer_id = $3, kiwify_subscription_id = $4 WHERE email = $5`,
+          [plan, expiresAt, customer?.id, subscriptionId, email]
         );
       }
 
