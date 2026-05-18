@@ -82,27 +82,35 @@ function encryptPrompt(text) {
 // Decrypt PRO prompt text (AES-256-GCM)
 function decryptPrompt(encryptedData) {
   if (!encryptedData) return null;
-  
+
   try {
     const buffer = Buffer.from(encryptedData, 'base64');
-    
+
+    // Se o buffer for menor que o mínimo do formato criptografado,
+    // o dado é texto simples (prompt criado antes da criptografia).
+    const MIN_ENCRYPTED_SIZE = SALT_LENGTH + IV_LENGTH + TAG_LENGTH + 1;
+    if (buffer.length < MIN_ENCRYPTED_SIZE) {
+      console.log('📄 Prompt em texto simples (pré-criptografia)');
+      return encryptedData;
+    }
+
     const salt = buffer.slice(0, SALT_LENGTH);
-    const iv = buffer.slice(SALT_LENGTH, TAG_POSITION);
-    const tag = buffer.slice(TAG_POSITION, ENCRYPTED_POSITION);
+    const iv   = buffer.slice(SALT_LENGTH, TAG_POSITION);
+    const tag  = buffer.slice(TAG_POSITION, ENCRYPTED_POSITION);
     const encrypted = buffer.slice(ENCRYPTED_POSITION);
-    
+
     const key = getKey(salt);
-    
     const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
     decipher.setAuthTag(tag);
-    
+
     const decrypted = decipher.update(encrypted) + decipher.final('utf8');
-    
     console.log('🔓 Prompt decrypted for subscriber');
     return decrypted;
   } catch (err) {
-    console.error('❌ Decryption failed:', err.message);
-    return '🔒 Erro ao desencriptar prompt';
+    // Falha na descriptografia — dado pode ser texto simples com conteúdo longo.
+    // Retorna como está para não quebrar a experiência do assinante.
+    console.error('⚠️ Decryption failed, returning as plain text:', err.message);
+    return encryptedData;
   }
 }
 
