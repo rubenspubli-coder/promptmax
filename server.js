@@ -571,6 +571,43 @@ app.post('/api/auth/forgot-password', async (req, res) => {
   }
 });
 
+// ─── ADMIN AUTH (server-side) ─────────────────────────────────
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'pablo2025';
+// Token is a signed HMAC so the server can verify it without a DB lookup
+function generateAdminToken() {
+  const payload = `admin:${Date.now()}`;
+  const sig = crypto.createHmac('sha256', ADMIN_PASSWORD).update(payload).digest('hex');
+  return Buffer.from(`${payload}:${sig}`).toString('base64');
+}
+function verifyAdminToken(token) {
+  try {
+    const decoded = Buffer.from(token, 'base64').toString('utf8');
+    const lastColon = decoded.lastIndexOf(':');
+    const payload = decoded.slice(0, lastColon);
+    const sig = decoded.slice(lastColon + 1);
+    const expected = crypto.createHmac('sha256', ADMIN_PASSWORD).update(payload).digest('hex');
+    return sig === expected;
+  } catch { return false; }
+}
+
+// POST /api/admin/auth — validate admin password, return signed token
+app.post('/api/admin/auth', (req, res) => {
+  const { password } = req.body;
+  if (!password || password !== ADMIN_PASSWORD) {
+    return res.status(401).json({ error: 'Senha incorreta' });
+  }
+  res.json({ token: generateAdminToken() });
+});
+
+// GET /api/admin/verify — check if admin token is valid
+app.get('/api/admin/verify', (req, res) => {
+  const token = req.headers['x-admin-token'];
+  if (!token || !verifyAdminToken(token)) {
+    return res.status(401).json({ error: 'Não autorizado' });
+  }
+  res.json({ ok: true });
+});
+
 // GET all users (admin)
 app.get('/api/users', async (req, res) => {
   try {
