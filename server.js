@@ -182,6 +182,8 @@ async function initDB() {
     WHERE NOT EXISTS (SELECT 1 FROM site_config WHERE id = 1)
   `);
   await pool.query(`ALTER TABLE site_config ADD COLUMN IF NOT EXISTS hero_font VARCHAR(100) DEFAULT 'Bebas Neue'`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token VARCHAR(64)`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expires TIMESTAMP`);
   console.log('✅ Tabela site_config criada/verificada');
 
   // Gerenciador de Tags
@@ -445,6 +447,36 @@ app.post('/api/auth/login', async (req, res) => {
   } catch (err) { 
     console.error(err); 
     res.status(500).json({ error: 'Erro ao fazer login' }); 
+  }
+});
+
+// POST forgot-password
+app.post('/api/auth/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email obrigatório' });
+
+    const { rows } = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+    // Responde sempre com sucesso para não expor se o email existe
+    if (!rows.length) return res.json({ ok: true });
+
+    const crypto = require('crypto');
+    const token = crypto.randomBytes(32).toString('hex');
+    const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
+
+    await pool.query(
+      'UPDATE users SET reset_token = $1, reset_token_expires = $2 WHERE email = $3',
+      [token, expires, email]
+    );
+
+    // TODO: conectar serviço de email (Resend, SendGrid, Nodemailer) e enviar link:
+    // https://promptshouse.com/reset-password?token=${token}
+    console.log(`🔑 Reset token para ${email}: ${token}`);
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro interno' });
   }
 });
 

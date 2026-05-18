@@ -339,9 +339,6 @@
     .auth-body { padding: 24px 28px 32px; }
     .auth-title { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 6px; }
     .auth-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
-    .btn-google { width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 13px 20px; border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.06); color: var(--text); font-family: 'Inter', sans-serif; transition: all 0.15s; margin-bottom: 20px; }
-    .btn-google:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.2); }
-    .btn-google img { width: 18px; height: 18px; }
     .auth-divider { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
     .auth-divider::before, .auth-divider::after { content: ''; flex: 1; height: 1px; background: var(--glass-border); }
     .auth-divider span { font-size: 12px; color: var(--muted2); }
@@ -584,16 +581,6 @@
             <h3>➕ Adicionar Nova Tag</h3>
             <div class="fg"><label>Nome da Tag</label><input type="text" id="tag-name" placeholder="Ex: Google Analytics, Meta Pixel..."></div>
             <div class="fg">
-              <label>Tipo / Plataforma</label>
-              <select id="tag-preset" onchange="applyTagPreset()">
-                <option value="">— Selecionar preset —</option>
-                <option value="gtag">Google Analytics (GA4)</option>
-                <option value="gtm">Google Tag Manager</option>
-                <option value="meta">Meta Pixel (Facebook)</option>
-                <option value="custom">Código personalizado</option>
-              </select>
-            </div>
-            <div class="fg">
               <label>Posição de instalação</label>
               <div style="display:flex;gap:12px;margin-top:6px">
                 <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--text);text-transform:none;letter-spacing:0">
@@ -803,24 +790,24 @@
       <div id="auth-login-view">
         <div class="auth-title">Bem-vindo de volta</div>
         <div class="auth-sub">Entre na sua conta para acessar os prompts</div>
-        <button class="btn-google" onclick="loginWithGoogle()">
-          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
-          Continuar com Google
-        </button>
-        <div class="auth-divider"><span>ou</span></div>
         <div class="auth-fg"><label>Email</label><input type="email" id="login-email" placeholder="seu@email.com"></div>
-        <div class="auth-fg"><label>Senha</label><input type="password" id="login-pass" placeholder="••••••••"></div>
+        <div class="auth-fg">
+          <label>Senha</label><input type="password" id="login-pass" placeholder="••••••••">
+          <div style="text-align:right;margin-top:6px"><a onclick="showForgotPassword()" style="font-size:12px;color:var(--muted);cursor:pointer;text-decoration:underline">Esqueci minha senha</a></div>
+        </div>
         <button class="btn-auth" onclick="submitLogin()">Entrar</button>
         <div class="auth-switch">Não tem conta? <a onclick="switchAuthTab('register')">Cadastre-se</a></div>
+      </div>
+      <div id="auth-forgot-view" style="display:none">
+        <div class="auth-title">Recuperar senha</div>
+        <div class="auth-sub">Enviaremos um link de redefinição para seu email</div>
+        <div class="auth-fg"><label>Email</label><input type="email" id="forgot-email" placeholder="seu@email.com"></div>
+        <button class="btn-auth" onclick="submitForgotPassword()">Enviar link de recuperação</button>
+        <div class="auth-switch"><a onclick="showLoginView()" style="cursor:pointer">← Voltar ao login</a></div>
       </div>
       <div id="auth-register-view" style="display:none">
         <div class="auth-title">Crie sua conta</div>
         <div class="auth-sub">Acesse prompts exclusivos gratuitamente</div>
-        <button class="btn-google" onclick="loginWithGoogle()">
-          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
-          Cadastrar com Google
-        </button>
-        <div class="auth-divider"><span>ou</span></div>
         <div class="auth-fg"><label>Nome</label><input type="text" id="reg-name" placeholder="Seu nome"></div>
         <div class="auth-fg"><label>Email</label><input type="email" id="reg-email" placeholder="seu@email.com"></div>
         <div class="auth-fg"><label>Senha</label><input type="password" id="reg-pass" placeholder="Mínimo 6 caracteres"></div>
@@ -1322,12 +1309,34 @@ function maybeCloseAuth(e) { if(e.target===document.getElementById('auth-modal')
 function switchAuthTab(tab) {
   document.getElementById('auth-login-view').style.display = tab==='login' ? 'block' : 'none';
   document.getElementById('auth-register-view').style.display = tab==='register' ? 'block' : 'none';
+  document.getElementById('auth-forgot-view').style.display = 'none';
   document.getElementById('tab-login').classList.toggle('active', tab==='login');
   document.getElementById('tab-register').classList.toggle('active', tab==='register');
 }
 
-function loginWithGoogle() {
-  showToast('Login com Google em breve!', 'info');
+function showForgotPassword() {
+  document.getElementById('auth-login-view').style.display = 'none';
+  document.getElementById('auth-forgot-view').style.display = 'block';
+  document.getElementById('tab-login').classList.remove('active');
+}
+
+function showLoginView() {
+  document.getElementById('auth-forgot-view').style.display = 'none';
+  document.getElementById('auth-login-view').style.display = 'block';
+  document.getElementById('tab-login').classList.add('active');
+}
+
+async function submitForgotPassword() {
+  const email = document.getElementById('forgot-email').value.trim();
+  if (!email) { showToast('Informe seu email.', 'error'); return; }
+  try {
+    await api('POST', '/auth/forgot-password', { email });
+    showToast('Link enviado! Verifique seu email.', 'success');
+    document.getElementById('forgot-email').value = '';
+    showLoginView();
+  } catch(err) {
+    showToast('Erro ao enviar. Verifique o email.', 'error');
+  }
 }
 
 async function submitLogin() {
@@ -1367,33 +1376,6 @@ async function submitRegister() {
 
 // ── CONTATOS ADMIN ───────────────────────────────────────────
 // ── GERENCIADOR DE TAGS ──────────────────────────────────────
-const TAG_PRESETS = {
-  gtag: {
-    name: 'Google Analytics (GA4)',
-    position: 'head',
-    code: '<!-- Google Analytics -->\n<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"><\/script>\n<script>\n  window.dataLayer = window.dataLayer || [];\n  function gtag(){dataLayer.push(arguments);}\n  gtag(\'js\', new Date());\n  gtag(\'config\', \'G-XXXXXXXXXX\');\n<\/script>'
-  },
-  gtm: {
-    name: 'Google Tag Manager',
-    position: 'head',
-    code: '<!-- Google Tag Manager -->\n<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({\'gtm.start\':\nnew Date().getTime(),event:\'gtm.js\'});var f=d.getElementsByTagName(s)[0],\nj=d.createElement(s),dl=l!=\'dataLayer\'?\'&l=\'+l:\'\';j.async=true;j.src=\n\'https://www.googletagmanager.com/gtm.js?id=\'+i+dl;f.parentNode.insertBefore(j,f);\n})(window,document,\'script\',\'dataLayer\',\'GTM-XXXXXXX\');<\/script>'
-  },
-  meta: {
-    name: 'Meta Pixel (Facebook)',
-    position: 'head',
-    code: '<!-- Meta Pixel -->\n<script>\n!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?\nn.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;\nn.push=n;n.loaded=!0;n.version=\'2.0\';n.queue=[];t=b.createElement(e);t.async=!0;\nt.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,\ndocument,\'script\',\'https://connect.facebook.net/en_US/fbevents.js\');\nfbq(\'init\', \'SEU_PIXEL_ID\');\nfbq(\'track\', \'PageView\');\n<\/script>\n<noscript><img height="1" width="1" style="display:none"\nsrc="https://www.facebook.com/tr?id=SEU_PIXEL_ID&ev=PageView&noscript=1"/><\/noscript>'
-  }
-};
-
-function applyTagPreset() {
-  const preset = document.getElementById('tag-preset').value;
-  if (!preset || preset === 'custom') return;
-  const p = TAG_PRESETS[preset];
-  if (!p) return;
-  document.getElementById('tag-name').value = p.name;
-  document.getElementById('tag-code').value = p.code;
-  document.querySelector(`input[name="tag-position"][value="${p.position}"]`).checked = true;
-}
 
 async function loadTags() {
   const list = document.getElementById('tags-list');
@@ -1434,7 +1416,6 @@ async function saveTag() {
     showToast('Tag salva com sucesso!', 'success');
     document.getElementById('tag-name').value = '';
     document.getElementById('tag-code').value = '';
-    document.getElementById('tag-preset').value = '';
     document.getElementById('pos-head').checked = true;
     loadTags();
     injectActiveTags();
