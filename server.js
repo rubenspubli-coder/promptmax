@@ -291,29 +291,23 @@ app.get('/api/prompts', async (req, res) => {
     query += ' ORDER BY created_at DESC';
     
     const { rows } = await pool.query(query, params);
-    
-    // Verificar se usuário é assinante
+
+    // Verificar se é admin ou assinante
+    const adminToken = req.headers['x-admin-token'];
+    const isAdmin = adminToken && verifyAdminToken(adminToken);
     let isSubscriber = false;
-    if (userEmail) {
+    if (!isAdmin && userEmail) {
       const userResult = await pool.query('SELECT is_subscriber FROM users WHERE email = $1', [userEmail]);
       isSubscriber = userResult.rows.length > 0 && userResult.rows[0].is_subscriber;
     }
-    
+
     // Processar prompts PRO (desencriptar ou ocultar)
     const filteredRows = rows.map(prompt => {
       if (prompt.tipo === 'pro') {
-        if (isSubscriber) {
-          // Assinante: desencriptar prompt_text
-          return {
-            ...prompt,
-            prompt_text: decryptPrompt(prompt.prompt_text)
-          };
+        if (isAdmin || isSubscriber) {
+          return { ...prompt, prompt_text: decryptPrompt(prompt.prompt_text) };
         } else {
-          // Não-assinante: ocultar prompt_text
-          return {
-            ...prompt,
-            prompt_text: '🔒 Conteúdo exclusivo para assinantes PRO'
-          };
+          return { ...prompt, prompt_text: '🔒 Conteúdo exclusivo para assinantes PRO' };
         }
       }
       return prompt;
@@ -345,13 +339,14 @@ app.get('/api/prompts/:id', async (req, res) => {
       isSubscriber = userResult.rows.length > 0 && userResult.rows[0].is_subscriber;
     }
     
+    const adminToken = req.headers['x-admin-token'];
+    const isAdmin = adminToken && verifyAdminToken(adminToken);
+
     // Processar prompt PRO (desencriptar ou ocultar)
     if (prompt.tipo === 'pro') {
-      if (isSubscriber) {
-        // Assinante: desencriptar prompt_text
+      if (isAdmin || isSubscriber) {
         prompt.prompt_text = decryptPrompt(prompt.prompt_text);
       } else {
-        // Não-assinante: ocultar prompt_text
         prompt.prompt_text = '🔒 Conteúdo exclusivo para assinantes PRO';
       }
     }
