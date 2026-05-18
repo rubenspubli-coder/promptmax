@@ -423,6 +423,7 @@
       </div>
     </div>
     <div class="nav-right">
+      <button class="btn-ver-site" id="btn-ver-site" onclick="switchView('home')" style="display:none;padding:7px 18px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--glass-border);background:var(--glass);color:var(--text);font-family:'Inter',sans-serif;transition:all 0.15s;">← Ver Site</button>
       <button class="btn-assinar" onclick="openSubModal()">Assinar</button>
       <button class="btn-icon" title="Login" onclick="openAuthModal('login')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
@@ -1081,7 +1082,10 @@ function switchView(v){
   document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
   document.querySelectorAll('.ntab').forEach(el=>el.classList.remove('active'));
   document.getElementById('view-'+v).classList.add('active');
-  document.getElementById('nav-'+v).classList.add('active');
+  const navEl=document.getElementById('nav-'+v);
+  if(navEl)navEl.classList.add('active');
+  const btnVerSite=document.getElementById('btn-ver-site');
+  if(btnVerSite)btnVerSite.style.display=v==='admin'?'block':'none';
   if(v==='admin'){loadStats();loadDashTable();}
 }
 
