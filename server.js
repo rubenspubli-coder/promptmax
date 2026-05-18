@@ -194,8 +194,12 @@ async function initDB() {
       created_at TIMESTAMP DEFAULT NOW()
     )
   `);
-  // Garantir todas as colunas da tabela users (safe para DBs antigos)
+  // Migrations seguras para DBs antigos (ADD COLUMN IF NOT EXISTS)
   const userMigrations = [
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS name VARCHAR(255)`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255)`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS is_subscriber BOOLEAN DEFAULT false`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS plan VARCHAR(50)`,
     `ALTER TABLE users ADD COLUMN IF NOT EXISTS subscribed_at TIMESTAMP`,
     `ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_expires_at TIMESTAMP`,
     `ALTER TABLE users ADD COLUMN IF NOT EXISTS kiwify_customer_id VARCHAR(255)`,
@@ -203,7 +207,9 @@ async function initDB() {
     `ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token VARCHAR(64)`,
     `ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expires TIMESTAMP`,
   ];
-  for (const sql of userMigrations) await pool.query(sql).catch(() => {});
+  for (const sql of userMigrations) {
+    await pool.query(sql).catch(e => console.log(`⚠️ Migration skip: ${e.message}`));
+  }
   console.log('✅ Tabela users criada/verificada');
 
   // Criar tabela site_config para configurações visuais
