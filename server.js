@@ -4,7 +4,43 @@ const cors = require('cors');
 const path = require('path');
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
-const crypto = require('crypto'); // For AES-256-GCM encryption
+const crypto = require('crypto');
+const nodemailer = require('nodemailer');
+
+// ─── EMAIL CONFIG ─────────────────────────────────────────────
+const emailTransporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || 'smtp.gmail.com',
+  port: parseInt(process.env.SMTP_PORT || '587'),
+  secure: false,
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
+
+async function sendEmail({ to, subject, html }) {
+  if (!process.env.SMTP_USER) {
+    console.log(`📧 [EMAIL SIMULADO] Para: ${to} | Assunto: ${subject}`);
+    return;
+  }
+  await emailTransporter.sendMail({
+    from: `"Prompts House" <${process.env.SMTP_USER}>`,
+    to, subject, html,
+  });
+  console.log(`✅ Email enviado para ${to}`);
+}
+
+// IDs dos produtos Kiwify → plano
+const KIWIFY_PLANS = {
+  monthly: { days: 30,  label: 'Mensal' },
+  annual:  { days: 365, label: 'Anual'  },
+};
+function detectPlan(product) {
+  const name = (product?.name || '').toLowerCase();
+  const id   = (product?.id   || '').toLowerCase();
+  if (name.includes('anual') || name.includes('annual') || id.includes('bCQL1VF'.toLowerCase())) return 'annual';
+  return 'monthly';
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -450,6 +486,45 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
+// GET verificar status de assinatura (chamado no load da página)
+app.get('/api/auth/me', async (req, res) => {
+  try {
+    const email = req.headers['x-user-email'];
+    if (!email) return res.status(401).json({ error: 'Não autenticado' });
+    const { rows } = await pool.query(
+      'SELECT id, email, name, is_subscriber, plan, subscription_expires_at FROM users WHERE email = $1',
+      [email]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Usuário não encontrado' });
+    const u = rows[0];
+    // Expirar assinatura automaticamente
+    if (u.is_subscriber && u.subscription_expires_at && new Date(u.subscription_expires_at) < new Date()) {
+      await pool.query('UPDATE users SET is_subscriber = false WHERE email = $1', [email]);
+      u.is_subscriber = false;
+    }
+    res.json(u);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// POST trocar senha
+app.post('/api/auth/change-password', async (req, res) => {
+  try {
+    const email = req.headers['x-user-email'];
+    if (!email) return res.status(401).json({ error: 'Não autenticado' });
+    const { current_password, new_password } = req.body;
+    if (!new_password || new_password.length < 6) return res.status(400).json({ error: 'Senha deve ter no mínimo 6 caracteres' });
+    const { rows } = await pool.query('SELECT password_hash FROM users WHERE email = $1', [email]);
+    if (!rows.length) return res.status(404).json({ error: 'Usuário não encontrado' });
+    const currentHash = Buffer.from(current_password).toString('base64');
+    if (rows[0].password_hash && rows[0].password_hash !== currentHash) {
+      return res.status(400).json({ error: 'Senha atual incorreta' });
+    }
+    const newHash = Buffer.from(new_password).toString('base64');
+    await pool.query('UPDATE users SET password_hash = $1 WHERE email = $2', [newHash, email]);
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // POST forgot-password
 app.post('/api/auth/forgot-password', async (req, res) => {
   try {
@@ -514,54 +589,90 @@ app.put('/api/users/:id/subscription', async (req, res) => {
 
 app.post('/api/webhook/kiwify', async (req, res) => {
   try {
-    console.log('🔔 Webhook Kiwify recebido:', req.body);
-    
-    const { 
-      event, 
-      Customer: customer,
-      Product: product,
-      order_status,
-      subscription_status 
-    } = req.body;
-    
+    console.log('🔔 Webhook Kiwify recebido:', JSON.stringify(req.body));
+
+    const { event, Customer: customer, Product: product, order_status, subscription_status } = req.body;
+
     const email = customer?.email;
-    if (!email) {
-      console.log('⚠️ Webhook sem email');
-      return res.json({ success: true });
+    if (!email) { console.log('⚠️ Webhook sem email'); return res.json({ success: true }); }
+
+    const isActivation = event === 'order.paid' || order_status === 'paid' || subscription_status === 'active';
+    const isCancellation = event === 'order.refunded' || subscription_status === 'canceled' || order_status === 'refunded';
+
+    if (isActivation) {
+      const plan = detectPlan(product);
+      const planDays = KIWIFY_PLANS[plan].days;
+      const expiresAt = new Date(Date.now() + planDays * 24 * 60 * 60 * 1000);
+      const name = customer?.name || email.split('@')[0];
+
+      // Verificar se usuário já existe
+      const existing = await pool.query('SELECT id, password_hash FROM users WHERE email = $1', [email]);
+      const isNewUser = existing.rows.length === 0;
+
+      // Gerar senha aleatória apenas para usuários novos
+      const plainPassword = isNewUser ? crypto.randomBytes(5).toString('hex') : null;
+      const passwordHash = plainPassword ? Buffer.from(plainPassword).toString('base64') : undefined;
+
+      if (isNewUser) {
+        await pool.query(
+          `INSERT INTO users (email, name, password_hash, is_subscriber, plan, subscribed_at, subscription_expires_at, kiwify_customer_id)
+           VALUES ($1, $2, $3, true, $4, NOW(), $5, $6)`,
+          [email, name, passwordHash, plan, expiresAt, customer?.id]
+        );
+      } else {
+        await pool.query(
+          `UPDATE users SET is_subscriber = true, plan = $1, subscribed_at = NOW(),
+           subscription_expires_at = $2, kiwify_customer_id = $3 WHERE email = $4`,
+          [plan, expiresAt, customer?.id, email]
+        );
+      }
+
+      console.log(`💚 Assinatura ${plan} ativada: ${email} | Expira: ${expiresAt.toISOString()}`);
+
+      // Enviar email com credenciais (somente para novos usuários)
+      if (isNewUser && plainPassword) {
+        const planLabel = KIWIFY_PLANS[plan].label;
+        await sendEmail({
+          to: email,
+          subject: '🎉 Bem-vindo ao Prompts House! Aqui estão suas credenciais',
+          html: `
+            <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;background:#080b14;color:#fff;border-radius:16px;overflow:hidden">
+              <div style="padding:32px;background:linear-gradient(135deg,#f59e0b,#ec4899);text-align:center">
+                <h1 style="margin:0;font-size:28px;color:#08080a">Prompts House</h1>
+                <p style="margin:8px 0 0;color:#08080a;opacity:.8">Sua assinatura está ativa!</p>
+              </div>
+              <div style="padding:32px">
+                <p style="font-size:16px">Olá, <strong>${name}</strong>!</p>
+                <p>Sua assinatura <strong>${planLabel}</strong> foi ativada com sucesso. Aqui estão seus dados de acesso:</p>
+                <div style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:20px;margin:20px 0">
+                  <p style="margin:0 0 8px"><span style="color:#9ca3af">Email:</span> <strong>${email}</strong></p>
+                  <p style="margin:0"><span style="color:#9ca3af">Senha:</span> <strong style="font-size:18px;letter-spacing:2px">${plainPassword}</strong></p>
+                </div>
+                <p style="color:#9ca3af;font-size:13px">Recomendamos que você troque sua senha após o primeiro login, na seção "Minha Conta".</p>
+                <div style="text-align:center;margin:28px 0">
+                  <a href="https://promptshouse.com" style="background:linear-gradient(90deg,#f59e0b,#ec4899);color:#08080a;padding:14px 32px;border-radius:50px;text-decoration:none;font-weight:700;font-size:15px">Acessar o site →</a>
+                </div>
+                <hr style="border:1px solid rgba(255,255,255,.1);margin:24px 0">
+                <p style="color:#6b7280;font-size:12px;text-align:center">Prompts House · Todos os direitos reservados</p>
+              </div>
+            </div>
+          `,
+        });
+      }
     }
-    
-    // Eventos que ativam assinatura
-    if (event === 'order.paid' || order_status === 'paid' || subscription_status === 'active') {
-      console.log(`✅ Ativando assinatura para ${email}`);
-      
-      // Criar usuário se não existir
+
+    if (isCancellation) {
+      console.log(`❌ Cancelando assinatura: ${email}`);
       await pool.query(
-        `INSERT INTO users (email, name, is_subscriber, plan, subscribed_at, kiwify_customer_id)
-         VALUES ($1, $2, true, $3, NOW(), $4)
-         ON CONFLICT (email) 
-         DO UPDATE SET is_subscriber = true, plan = $3, subscribed_at = NOW(), kiwify_customer_id = $4`,
-        [email, customer?.name || email.split('@')[0], product?.name || 'kiwify', customer?.id]
-      );
-      
-      console.log(`💚 Assinatura ativada: ${email}`);
-    }
-    
-    // Eventos que cancelam assinatura
-    if (event === 'order.refunded' || subscription_status === 'canceled' || order_status === 'refunded') {
-      console.log(`❌ Cancelando assinatura para ${email}`);
-      
-      await pool.query(
-        'UPDATE users SET is_subscriber = false WHERE email = $1',
+        'UPDATE users SET is_subscriber = false, subscription_expires_at = NOW() WHERE email = $1',
         [email]
       );
-      
-      console.log(`🔴 Assinatura cancelada: ${email}`);
     }
-    
+
     res.json({ success: true });
-  } catch (err) { 
-    console.error('❌ Erro no webhook:', err); 
-    res.status(500).json({ error: 'Erro ao processar webhook' }); 
+  } catch (err) {
+    console.error('❌ Erro no webhook:', err);
+    res.status(500).json({ error: 'Erro ao processar webhook' });
   }
 });
 
