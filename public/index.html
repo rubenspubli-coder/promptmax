@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Prompts House — A sua casa de Prompts</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Bebas+Neue&family=Quicksand:wght@600;700&family=Montserrat:wght@700;800&family=Poppins:wght@600;700;800&family=Raleway:wght@700;800&family=Oswald:wght@500;600;700&family=Playfair+Display:wght@700;800&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Bebas+Neue&family=Quicksand:wght@600;700&family=Montserrat:wght@700;800&family=Poppins:wght@600;700;800&family=Raleway:wght@700;800&family=Oswald:wght@500;600;700&family=Playfair+Display:wght@700;800&family=Nunito:wght@700;800;900&family=Roboto:wght@700;900&family=Open+Sans:wght@700;800&family=Lato:wght@700;900&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -76,7 +76,7 @@
     .hero-video { width: 100%; height: 100%; object-fit: cover; opacity: 0.55; }
     .hero-content { position: relative; z-index: 1; }
     .hero-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); display: block; }
-    .hero h1 { font-size: clamp(80px, 12vw, 140px); font-weight: 800; line-height: 0.9; letter-spacing: -3px; margin-bottom: 22px; padding-bottom: 16px; overflow: visible; }
+    .hero h1 { font-size: clamp(48px, 7vw, 96px); font-weight: 800; line-height: 0.9; letter-spacing: -3px; margin-bottom: 22px; padding-bottom: 16px; overflow: visible; }
     .hero h1 .l1 { display: block; color: var(--text); font-family: 'Bebas Neue', sans-serif; font-style: normal; font-weight: 400; }
     .hero h1 .l2 { display: block; background: linear-gradient(90deg, var(--amber) 0%, var(--pink) 48%, var(--purple) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-family: 'Bebas Neue', sans-serif; font-style: normal; font-weight: 400; }
     .hero-pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 20px; font-size: 13px; color: rgba(255,255,255,0.85); margin-bottom: 20px; font-weight: 500; }
@@ -363,7 +363,7 @@
 
     @media (max-width: 768px) {
       .hero { padding: 60px 20px 40px; }
-      .hero h1 { letter-spacing: -1px; font-size: clamp(60px, 16vw, 100px); line-height: 0.75; line-height: 1.25; padding-bottom: 16px; }
+      .hero h1 { letter-spacing: -1px; font-size: clamp(36px, 12vw, 64px); line-height: 1.25; padding-bottom: 16px; }
       .hero-cta { font-size: 16px; padding: 14px 36px; }
       .btn-assinar { font-size: 12px; padding: 7px 16px; }
       .hero p { font-size: 15px; padding: 0 8px; }
@@ -644,7 +644,7 @@
             <div class="fg">
               <label>Fonte da Headline</label>
               <select id="config-font">
-                <option value="Bebas Neue">Bebas Neue (atual)</option>
+                <option value="Bebas Neue">Bebas Neue</option>
                 <option value="Quicksand">Quicksand</option>
                 <option value="Montserrat">Montserrat</option>
                 <option value="Poppins">Poppins</option>
@@ -652,6 +652,9 @@
                 <option value="Oswald">Oswald</option>
                 <option value="Playfair Display">Playfair Display</option>
                 <option value="Nunito">Nunito</option>
+                <option value="Roboto">Roboto</option>
+                <option value="Open Sans">Open Sans</option>
+                <option value="Lato">Lato</option>
                 <option value="Inter">Inter</option>
               </select>
               <div style="font-size:12px;color:var(--muted);margin-top:4px">Fonte usada no título principal do hero</div>
