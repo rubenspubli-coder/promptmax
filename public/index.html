@@ -163,8 +163,18 @@
     .card-bookmark { position: absolute; top: 10px; right: 10px; width: 34px; height: 34px; border-radius: 10px; background: rgba(20,24,40,0.75); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(8px); transition: all 0.15s; }
     .card-pro-badge { position: absolute; top: 10px; left: 10px; padding: 4px 10px; border-radius: 6px; background: linear-gradient(135deg, var(--amber), var(--pink)); color: #08080a; font-size: 11px; font-weight: 800; letter-spacing: 0.5px; z-index: 5; }
     .card-bookmark:hover { background: rgba(255,255,255,0.12); }
-    .card-bookmark svg { width: 16px; height: 16px; stroke: rgba(255,255,255,0.7); fill: none; }
-    .card-bookmark.saved svg { fill: var(--amber); stroke: var(--amber); }
+    .card-bookmark svg { width: 16px; height: 16px; stroke: rgba(255,255,255,0.7); fill: none; transition: all 0.2s; }
+    .card-bookmark.saved svg { fill: #f43f5e; stroke: #f43f5e; }
+    .card-bookmark.saved { border-color: rgba(244,63,94,0.4); }
+    /* VIEW FAVORITOS */
+    .fav-view { max-width: 1200px; margin: 0 auto; padding: 48px 24px 80px; }
+    .fav-header { display: flex; align-items: center; gap: 14px; margin-bottom: 36px; }
+    .fav-back { padding: 7px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid var(--glass-border); background: var(--glass); color: var(--muted); font-family: 'Inter', sans-serif; transition: all 0.15s; }
+    .fav-back:hover { color: var(--text); }
+    .fav-empty { text-align: center; padding: 80px 20px; color: var(--muted); }
+    .fav-empty svg { width: 48px; height: 48px; stroke: rgba(255,255,255,0.15); margin-bottom: 16px; }
+    .fav-empty p { font-size: 15px; margin-bottom: 8px; }
+    .fav-empty small { font-size: 13px; color: var(--muted2); }
 
     /* Corpo */
     .card-body { padding: 16px 18px 18px; display: flex; flex-direction: column; flex: 1; }
@@ -438,6 +448,7 @@
         <div id="account-menu" style="display:none;position:absolute;right:0;top:46px;background:rgba(12,15,28,0.98);border:1px solid var(--glass-border);border-radius:14px;padding:8px;min-width:180px;backdrop-filter:blur(20px);z-index:400">
           <div id="account-name" style="padding:8px 12px;font-size:12px;color:var(--muted);border-bottom:1px solid rgba(255,255,255,0.07);margin-bottom:4px"></div>
           <button onclick="openProfileModal();toggleAccountMenu()" style="width:100%;text-align:left;padding:9px 12px;border-radius:9px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:transparent;color:var(--text);transition:background 0.15s" onmouseover="this.style.background='rgba(255,255,255,0.07)'" onmouseout="this.style.background='transparent'">✏️ Editar Perfil</button>
+          <button onclick="switchView('favoritos');toggleAccountMenu()" style="width:100%;text-align:left;padding:9px 12px;border-radius:9px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:transparent;color:var(--text);transition:background 0.15s" onmouseover="this.style.background='rgba(255,255,255,0.07)'" onmouseout="this.style.background='transparent'">❤️ Favoritos</button>
           <button onclick="document.getElementById('change-pass-modal').classList.add('open');toggleAccountMenu()" style="width:100%;text-align:left;padding:9px 12px;border-radius:9px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:transparent;color:var(--text);transition:background 0.15s" onmouseover="this.style.background='rgba(255,255,255,0.07)'" onmouseout="this.style.background='transparent'">🔑 Trocar Senha</button>
           <button onclick="logout()" style="width:100%;text-align:left;padding:9px 12px;border-radius:9px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:transparent;color:#f87171;transition:background 0.15s" onmouseover="this.style.background='rgba(248,113,113,0.08)'" onmouseout="this.style.background='transparent'">↩ Sair</button>
         </div>
@@ -488,6 +499,17 @@
       </div>
     </div>
     <div class="cards-grid" id="cards-grid"><div class="empty-msg">Carregando prompts...</div></div>
+  </div>
+
+  <!-- FAVORITOS -->
+  <div id="view-favoritos" class="view">
+    <div class="fav-view">
+      <div class="fav-header">
+        <button class="fav-back" onclick="switchView('home')">← Voltar</button>
+        <h2 style="font-size:22px;font-weight:700">Meus Favoritos</h2>
+      </div>
+      <div id="fav-grid"></div>
+    </div>
   </div>
 
   <!-- ADMIN -->
@@ -938,6 +960,27 @@ function toggleSave(id,e){
   if(savedSet.has(id)){savedSet.delete(id);btn.classList.remove('saved');}
   else{savedSet.add(id);btn.classList.add('saved');}
   localStorage.setItem('pm_saved',JSON.stringify([...savedSet]));
+  // Re-renderiza favoritos se estiver nessa view
+  if(document.getElementById('view-favoritos').classList.contains('active')) renderFavorites();
+}
+
+function renderFavorites(){
+  const grid=document.getElementById('fav-grid');
+  const favs=allPrompts.filter(p=>savedSet.has(p.id));
+  if(!favs.length){
+    grid.innerHTML=`<div class="fav-empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      <p>Nenhum favorito ainda</p>
+      <small>Clique no ❤️ de qualquer prompt para salvar aqui</small>
+    </div>`;
+    return;
+  }
+  grid.innerHTML=`<div class="cards-grid">${favs.map(makeCard).join('')}</div>`;
+  setTimeout(()=>{
+    document.querySelectorAll('#fav-grid .lazy-img').forEach(img=>{
+      img.src=img.dataset.src;
+    });
+  },0);
 }
 
 // ── SUBSCRIPTION CONTROL ────────────────────────────────────
@@ -1122,6 +1165,55 @@ function animCount(id,target,sfx=''){
   const t=setInterval(()=>{n=Math.min(n+s,target);el.textContent=n+sfx;if(n>=target)clearInterval(t);},50);
 }
 
+function makeCard(p){
+  const c=p.category||'sports';
+  const thumbClass='card-thumb-placeholder '+(THUMBS[c]||'');
+  const imgHtml=p.image_url
+    ? `<img class="card-thumb lazy-img" data-src="${p.image_url}" alt=""
+         style="opacity:0;transition:opacity 0.3s;width:100%;height:auto;display:block;"
+         onload="this.style.opacity=1;this.nextElementSibling.style.display='none'"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+       <div class="${thumbClass}" style="display:flex">${ICONS[c]||'✦'}</div>`
+    : `<div class="${thumbClass}">${ICONS[c]||'✦'}</div>`;
+  const liked=likedSet.has(p.id);
+  const saved=savedSet.has(p.id);
+  const daysAgo=Math.floor((Date.now()-new Date(p.created_at))/(1000*60*60*24));
+  const dateStr=daysAgo===0?'hoje':daysAgo===1?'1 dia atrás':daysAgo+' dias atrás';
+  const isPro=p.tipo==='pro';
+  const proBadge=isPro?`<div class="card-pro-badge">PRO</div>`:'';
+  return `
+  <div class="pcard" onclick="openModal(${p.id})">
+    <div class="card-img-wrap">
+      ${imgHtml}
+      ${proBadge}
+      <div class="card-bookmark ${saved?'saved':''}" onclick="toggleSave(${p.id},event)" title="Favoritar">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="card-author-row">
+        <div class="card-avatar">PM</div>
+        <span class="card-author-name">@promptshouse</span>
+      </div>
+      <div class="card-name">${p.title}</div>
+      <div class="card-desc">${p.description||''}</div>
+      <div class="card-footer">
+        <div class="card-stats">
+          <span class="card-stat">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            ${fv(p.views)}
+          </span>
+          <span class="card-stat likes ${liked?'liked':''}" onclick="toggleLike(${p.id},event)">
+            <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            <span id="likes-${p.id}">${p.likes||0}</span>
+          </span>
+        </div>
+        <span class="card-date">${dateStr}</span>
+      </div>
+    </div>
+  </div>`;
+}
+
 function renderGrid(){
   const grid=document.getElementById('cards-grid');
   const list=allPrompts.filter(p=>{
@@ -1130,57 +1222,7 @@ function renderGrid(){
     return mc&&ms;
   });
   if(!list.length){grid.innerHTML='<div class="empty-msg">Nenhum prompt encontrado.</div>';return;}
-  grid.innerHTML=list.map(p=>{
-    const c=p.category||'sports';
-    const thumbClass='card-thumb-placeholder '+(THUMBS[c]||'');
-    const imgHtml=p.image_url
-      ? `<img class="card-thumb lazy-img" data-src="${p.image_url}" alt=""
-           style="opacity:0;transition:opacity 0.3s;width:100%;height:auto;display:block;"
-           onload="this.style.opacity=1;this.nextElementSibling.style.display='none'"
-           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-         <div class="${thumbClass}" style="display:flex">${ICONS[c]||'✦'}</div>`
-      : `<div class="${thumbClass}">${ICONS[c]||'✦'}</div>`;
-    const initials='PM';
-    const liked=likedSet.has(p.id);
-    const saved=savedSet.has(p.id);
-    const daysAgo=Math.floor((Date.now()-new Date(p.created_at))/(1000*60*60*24));
-    const dateStr=daysAgo===0?'hoje':daysAgo===1?'1 dia atrás':daysAgo+' dias atrás';
-    const isPro = p.tipo === 'pro';
-    const proBadge = isPro ? `<div class="card-pro-badge">PRO</div>` : '';
-    return `
-    <div class="pcard" onclick="openModal(${p.id})">
-      <div class="card-img-wrap">
-        ${imgHtml}
-        ${proBadge}
-        <div class="card-bookmark ${saved?'saved':''}" onclick="toggleSave(${p.id},event)" title="Salvar">
-          <svg viewBox="0 0 24 24" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
-        </div>
-      </div>
-      <div class="card-body">
-        <div class="card-author-row">
-          <div class="card-avatar">${initials}</div>
-          <span class="card-author-name">@promptshouse</span>
-        </div>
-        <div class="card-name">${p.title}</div>
-        <div class="card-desc">${p.description||''}</div>
-        <div class="card-footer">
-          <div class="card-stats">
-            <span class="card-stat">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-              ${fv(p.views)}
-            </span>
-            <span class="card-stat likes ${liked?'liked':''}" onclick="toggleLike(${p.id},event)">
-              <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-              <span id="likes-${p.id}">${p.likes||0}</span>
-            </span>
-          </div>
-          <span class="card-date">${dateStr}</span>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-  
-  // Activate lazy loading for images
+  grid.innerHTML=list.map(makeCard).join('');
   activateLazyLoading();
 }
 
@@ -1282,6 +1324,7 @@ function switchView(v){
   const btnAdminLogout=document.getElementById('btn-admin-logout');
   if(btnAdminLogout)btnAdminLogout.style.display=v==='admin'?'block':'none';
   if(v==='admin'){loadStats();loadDashTable();}
+  if(v==='favoritos'){renderFavorites();}
 }
 
 function adminLogout(){
