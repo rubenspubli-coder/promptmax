@@ -1277,16 +1277,15 @@ async function openModal(id){
     if(p.image_url){mimg.src=p.image_url;mimg.style.display='block';}else{mimg.style.display='none';}
     
     const pb=document.getElementById('m-prompt'),lk=document.getElementById('m-lock'),cb=document.getElementById('copy-btn');
-    
-    // Verificar se tem acesso ao PROMPT
-    if(!canAccessPrompt(p)){
-      // Mostra mensagem de bloqueio no lugar do prompt
+
+    // Confiar na resposta do servidor: se mandou texto real → mostrar; se mandou mensagem de bloqueio → travar
+    const serverBlocked = p.tipo==='pro' && (!p.prompt_text || p.prompt_text.startsWith('🔒'));
+    if(serverBlocked){
       pb.textContent='';
       pb.classList.add('prompt-locked');
       lk.classList.add('show');
       cb.style.display='none';
     } else {
-      // Mostra o prompt completo
       pb.textContent=p.prompt_text;
       pb.classList.remove('prompt-locked');
       lk.classList.remove('show');
