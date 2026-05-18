@@ -527,8 +527,8 @@ app.get('/api/config', async (req, res) => {
     if (rows.length === 0) {
       return res.json({
         bullet_text: 'Biblioteca completa de prompts',
-        headline: 'Dê asas a sua imaginação',
-        subheadline: 'Prompts profissionais para Gemini, Nano Banana e GPT2. Grátis pra começar.'
+        headline: 'Transforme ideias em criações profissionais',
+        subheadline: 'Engines selecionadas compatível com +30 IAs, criado por engenheiros de Prompts'
       });
     }
     res.json(rows[0]);
