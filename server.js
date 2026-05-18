@@ -194,6 +194,16 @@ async function initDB() {
       created_at TIMESTAMP DEFAULT NOW()
     )
   `);
+  // Garantir todas as colunas da tabela users (safe para DBs antigos)
+  const userMigrations = [
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS subscribed_at TIMESTAMP`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_expires_at TIMESTAMP`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS kiwify_customer_id VARCHAR(255)`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id VARCHAR(255)`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token VARCHAR(64)`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expires TIMESTAMP`,
+  ];
+  for (const sql of userMigrations) await pool.query(sql).catch(() => {});
   console.log('✅ Tabela users criada/verificada');
 
   // Criar tabela site_config para configurações visuais
