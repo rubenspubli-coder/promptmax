@@ -184,6 +184,19 @@ async function initDB() {
   await pool.query(`ALTER TABLE site_config ADD COLUMN IF NOT EXISTS hero_font VARCHAR(100) DEFAULT 'Bebas Neue'`);
   console.log('✅ Tabela site_config criada/verificada');
 
+  // Gerenciador de Tags
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS site_tags (
+      id SERIAL PRIMARY KEY,
+      name VARCHAR(100) NOT NULL,
+      code TEXT NOT NULL,
+      position VARCHAR(10) NOT NULL DEFAULT 'head',
+      active BOOLEAN DEFAULT true,
+      created_at TIMESTAMP DEFAULT NOW()
+    )
+  `);
+  console.log('✅ Tabela site_tags criada/verificada');
+
 
   const { rows } = await pool.query('SELECT COUNT(*) FROM prompts');
   if (parseInt(rows[0].count) === 0) {
@@ -590,6 +603,44 @@ app.put('/api/config', async (req, res) => {
     console.error('❌ Stack:', err.stack);
     res.status(500).json({ error: err.message });
   }
+});
+
+// ─── Tags ─────────────────────────────────────────────────────
+app.get('/api/tags', async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT * FROM site_tags ORDER BY created_at ASC');
+    res.json(rows);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/tags', async (req, res) => {
+  try {
+    const { name, code, position } = req.body;
+    if (!name || !code || !position) return res.status(400).json({ error: 'name, code e position são obrigatórios' });
+    const { rows } = await pool.query(
+      'INSERT INTO site_tags (name, code, position) VALUES ($1, $2, $3) RETURNING *',
+      [name, code, position]
+    );
+    res.json(rows[0]);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.put('/api/tags/:id', async (req, res) => {
+  try {
+    const { name, code, position, active } = req.body;
+    const { rows } = await pool.query(
+      'UPDATE site_tags SET name=$1, code=$2, position=$3, active=$4 WHERE id=$5 RETURNING *',
+      [name, code, position, active, req.params.id]
+    );
+    res.json(rows[0]);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.delete('/api/tags/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM site_tags WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // SPA fallback
