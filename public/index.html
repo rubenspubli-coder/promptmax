@@ -148,8 +148,8 @@
     }
 
     /* Imagem */
-    .card-img-wrap { position: relative; width: 100%; aspect-ratio: 4/3; overflow: hidden; flex-shrink: 0; background: #0d0f1a; }
-    .card-thumb { width: 100%; height: 100%; object-fit: contain; display: block; transition: transform 0.3s; }
+    .card-img-wrap { position: relative; width: 100%; overflow: hidden; flex-shrink: 0; }
+    .card-thumb { width: 100%; height: auto; display: block; transition: transform 0.3s; }
     .pcard:hover .card-thumb { transform: scale(1.04); }
     .card-thumb-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 52px; letter-spacing: 5px; color: rgba(255,255,255,0.07); font-weight: 800; }
     .thumb-sports { background: linear-gradient(135deg, #0b1628 0%, #142140 60%, #1e2f5e 100%); }
@@ -175,7 +175,7 @@
     .card-author-name { font-size: 13px; color: var(--muted); font-weight: 500; }
 
     /* Título e desc */
-    .card-name { font-size: 18px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.3px; color: var(--text); line-height: 1.25; }
+    .card-name { font-size: 15px; font-weight: 500; margin-bottom: 8px; letter-spacing: -0.1px; color: var(--text); line-height: 1.25; }
     .card-desc { font-size: 14px; color: var(--muted); line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; flex: 1; }
 
     /* Footer */
@@ -941,7 +941,7 @@ function renderGrid(){
     const thumbClass='card-thumb-placeholder '+(THUMBS[c]||'');
     const imgHtml=p.image_url
       ? `<img class="card-thumb lazy-img" data-src="${p.image_url}" alt=""
-           style="opacity:0;transition:opacity 0.3s;width:100%;height:100%;object-fit:contain;display:block;"
+           style="opacity:0;transition:opacity 0.3s;width:100%;height:auto;display:block;"
            onload="this.style.opacity=1;this.nextElementSibling.style.display='none'"
            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
          <div class="${thumbClass}" style="display:flex">${ICONS[c]||'✦'}</div>`
