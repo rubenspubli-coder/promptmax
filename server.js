@@ -431,6 +431,7 @@ app.post('/api/prompts', upload.single('image'), async (req, res) => {
   try {
     const { title, description, prompt_text, category, tool, tipo } = req.body;
     if (!title || !prompt_text || !category) return res.status(400).json({ error: 'Campos obrigatórios: title, prompt_text, category' });
+    if (prompt_text.startsWith('🔒')) return res.status(400).json({ error: 'O texto do prompt não pode ser o placeholder de bloqueio. Cole o prompt real.' });
 
     let image_url = null;
     if (req.file) {
@@ -471,6 +472,7 @@ app.post('/api/prompts', upload.single('image'), async (req, res) => {
 app.put('/api/prompts/:id', upload.single('image'), async (req, res) => {
   try {
     const { title, description, prompt_text, category, tool, tipo } = req.body;
+    if (prompt_text && prompt_text.startsWith('🔒')) return res.status(400).json({ error: 'O texto do prompt não pode ser o placeholder de bloqueio. Cole o prompt real.' });
     const existing = await pool.query('SELECT image_url FROM prompts WHERE id = $1', [req.params.id]);
     if (!existing.rows.length) return res.status(404).json({ error: 'Prompt não encontrado' });
 
