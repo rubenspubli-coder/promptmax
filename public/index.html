@@ -1473,7 +1473,7 @@ document.addEventListener('keydown',e=>{
 });
 
 // Aplica config visual cacheada ANTES do primeiro paint (elimina flash em visitas repetidas)
-try { const _c = localStorage.getItem('ph_site_config'); if (_c) applyVisualConfig(JSON.parse(_c)); } catch(e) {}
+try { const _c = localStorage.getItem('ph_site_config'); if (_c) applyVisualConfig(JSON.parse(_c), { skipVideo: true }); } catch(e) {}
 
 checkSubscription();
 // Limpa chaves antigas de auth do admin (migração)
@@ -1732,11 +1732,10 @@ async function toggleSubscription(userId, activate, plan) {
   }
 }
 
-// Video background — MP4 direto
+// Video background — src definido dinamicamente pelo config do servidor
 (function(){
   const vid = document.getElementById('hero-vid');
   if (!vid) return;
-  vid.src = 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260416_101255_3099d3e4-d0cf-4e59-9666-97fbf521ac71.mp4';
   vid.muted = true;
   vid.loop = true;
   vid.playsInline = true;
@@ -1762,7 +1761,7 @@ if (searchInput) {
 // ==========================================
 
 // Aplica config visual ao DOM (síncrono — pode ser chamado com cache ou dados frescos)
-function applyVisualConfig(config) {
+function applyVisualConfig(config, opts) {
   if (!config) return;
 
   if (config.logo_url) {
@@ -1799,7 +1798,7 @@ function applyVisualConfig(config) {
     });
   }
 
-  if (config.video_url) {
+  if (config.video_url && !(opts && opts.skipVideo)) {
     document.querySelectorAll('#hero-vid').forEach(vid => vid.src = config.video_url);
   }
 }
