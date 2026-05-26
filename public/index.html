@@ -1472,6 +1472,9 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){ closeModal(); closeAuthModal(); }
 });
 
+// Aplica config visual cacheada ANTES do primeiro paint (elimina flash em visitas repetidas)
+try { const _c = localStorage.getItem('ph_site_config'); if (_c) applyVisualConfig(JSON.parse(_c)); } catch(e) {}
+
 checkSubscription();
 // Limpa chaves antigas de auth do admin (migração)
 localStorage.removeItem('ph_admin_auth');
@@ -1758,112 +1761,75 @@ if (searchInput) {
 // VISUAL CONFIG FUNCTIONS
 // ==========================================
 
-// Load saved visual config on page load
+// Aplica config visual ao DOM (síncrono — pode ser chamado com cache ou dados frescos)
+function applyVisualConfig(config) {
+  if (!config) return;
+
+  if (config.logo_url) {
+    document.querySelectorAll('.logo img, .logo svg').forEach(el => {
+      el.parentElement.innerHTML = `<img src="${config.logo_url}" alt="Logo" style="height:30px;width:auto;">`;
+    });
+  }
+
+  if (config.favicon_url) {
+    let link = document.querySelector("link[rel*='icon']");
+    if (!link) { link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link); }
+    link.href = config.favicon_url;
+  }
+
+  if (config.bullet_text) {
+    document.querySelectorAll('.hero-pill').forEach(el => el.textContent = config.bullet_text);
+  }
+
+  if (config.headline) {
+    document.querySelectorAll('.hero h1').forEach(el => {
+      const words = config.headline.split(' ');
+      const mid = Math.ceil(words.length / 2);
+      el.innerHTML = `<span class="l1">${words.slice(0, mid).join(' ')}</span><span class="l2">${words.slice(mid).join(' ')}</span>`;
+    });
+  }
+
+  if (config.subheadline) {
+    document.querySelectorAll('.hero p').forEach(el => el.textContent = config.subheadline);
+  }
+
+  if (config.hero_font) {
+    document.querySelectorAll('.hero h1 .l1, .hero h1 .l2').forEach(el => {
+      el.style.fontFamily = `'${config.hero_font}', sans-serif`;
+    });
+  }
+
+  if (config.video_url) {
+    document.querySelectorAll('#hero-vid').forEach(vid => vid.src = config.video_url);
+  }
+}
+
+// Carrega config do servidor; aplica cache imediatamente para evitar flash
 async function loadVisualConfig() {
   try {
-    console.log('🔄 Loading visual config from database...');
-    
-    // Fetch config from database
     const config = await api('GET', '/config');
-    console.log('✅ Config loaded from DB:', config);
-    
-    // Apply logo
-    if (config.logo_url) {
-      const logoElements = document.querySelectorAll('.logo img, .logo svg');
-      logoElements.forEach(el => {
-        const parent = el.parentElement;
-        parent.innerHTML = `<img src="${config.logo_url}" alt="Logo" style="height: 30px; width: auto;">`;
-      });
-      console.log('✅ Logo applied');
-    }
-    
-    // Apply favicon
-    if (config.favicon_url) {
-      let link = document.querySelector("link[rel*='icon']");
-      if (!link) {
-        link = document.createElement('link');
-        link.rel = 'icon';
-        document.head.appendChild(link);
-      }
-      link.href = config.favicon_url;
-      console.log('✅ Favicon applied');
-    }
-    
-    // Apply bullet text
-    if (config.bullet_text) {
-      const bulletEls = document.querySelectorAll('.hero-pill');
-      bulletEls.forEach(el => el.textContent = config.bullet_text);
-      console.log('✅ Bullet applied:', config.bullet_text);
-    }
-    
-    // Apply headline with Bebas Neue font structure
-    if (config.headline) {
-      const headlineEls = document.querySelectorAll('.hero h1');
-      headlineEls.forEach(el => {
-        const words = config.headline.split(' ');
-        const midPoint = Math.ceil(words.length / 2);
-        const line1 = words.slice(0, midPoint).join(' ');
-        const line2 = words.slice(midPoint).join(' ');
-        el.innerHTML = `<span class="l1">${line1}</span><span class="l2">${line2}</span>`;
-      });
-      console.log('✅ Headline applied:', config.headline);
-    }
-    
-    // Apply subheadline
-    if (config.subheadline) {
-      const subEls = document.querySelectorAll('.hero p');
-      subEls.forEach(el => el.textContent = config.subheadline);
-      console.log('✅ Subheadline applied:', config.subheadline);
-    }
+    try { localStorage.setItem('ph_site_config', JSON.stringify(config)); } catch(e) {}
+    applyVisualConfig(config);
 
-    // Apply hero font
-    if (config.hero_font) {
-      document.querySelectorAll('.hero h1 .l1, .hero h1 .l2').forEach(el => {
-        el.style.fontFamily = `'${config.hero_font}', sans-serif`;
-      });
-      console.log('✅ Hero font applied:', config.hero_font);
-    }
-    
-    // Apply video
-    if (config.video_url) {
-      const vids = document.querySelectorAll('#hero-vid');
-      vids.forEach(vid => vid.src = config.video_url);
-      console.log('✅ Video applied');
-    }
-    
-    // Fill admin inputs if they exist (desktop only)
+    // Preenche inputs do painel admin se existirem
     const configBullet = document.getElementById('config-bullet');
     const configHeadline = document.getElementById('config-headline');
     const configSubheadline = document.getElementById('config-subheadline');
     const configVideoUrl = document.getElementById('config-video-url');
+    const configFont = document.getElementById('config-font');
     const previewLogo = document.getElementById('preview-logo');
     const previewFavicon = document.getElementById('preview-favicon');
     const previewVid = document.getElementById('preview-video');
     const previewContainer = document.getElementById('video-preview-container');
-    
+
     if (configBullet && config.bullet_text) configBullet.value = config.bullet_text;
     if (configHeadline && config.headline) configHeadline.value = config.headline;
     if (configSubheadline && config.subheadline) configSubheadline.value = config.subheadline;
     if (configVideoUrl && config.video_url) configVideoUrl.value = config.video_url;
-    const configFont = document.getElementById('config-font');
     if (configFont && config.hero_font) configFont.value = config.hero_font;
-    
-    if (previewLogo && config.logo_url) {
-      previewLogo.src = config.logo_url;
-      previewLogo.style.display = 'block';
-    }
-    
-    if (previewFavicon && config.favicon_url) {
-      previewFavicon.src = config.favicon_url;
-      previewFavicon.style.display = 'block';
-    }
-    
-    if (previewVid && config.video_url) {
-      previewVid.src = config.video_url;
-      if (previewContainer) previewContainer.style.display = 'block';
-    }
-    
-    console.log('✅ Visual config loaded successfully');
+    if (previewLogo && config.logo_url) { previewLogo.src = config.logo_url; previewLogo.style.display = 'block'; }
+    if (previewFavicon && config.favicon_url) { previewFavicon.src = config.favicon_url; previewFavicon.style.display = 'block'; }
+    if (previewVid && config.video_url) { previewVid.src = config.video_url; if (previewContainer) previewContainer.style.display = 'block'; }
   } catch (err) {
     console.error('❌ Error loading config:', err);
   }
@@ -2071,8 +2037,8 @@ async function saveVisualConfig() {
   }
 }
 
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', loadVisualConfig);
+// Chamada direta — sem esperar DOMContentLoaded (script já está no final do body)
+loadVisualConfig();
 
 </script>
 </body>
