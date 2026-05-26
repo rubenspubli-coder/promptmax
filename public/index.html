@@ -1710,9 +1710,12 @@ async function loadContacts() {
         <td><span class="status-badge ${u.is_subscriber ? 'active' : 'inactive'}">${u.is_subscriber ? 'ATIVO' : 'INATIVO'}</span></td>
         <td>${u.plan || '-'}</td>
         <td>${u.subscribed_at ? new Date(u.subscribed_at).toLocaleDateString('pt-BR') : '-'}</td>
-        <td>
+        <td style="display:flex;gap:6px;flex-wrap:wrap">
           <button class="btn-mini ${u.is_subscriber ? 'btn-danger' : 'btn-success'}" onclick="toggleSubscription(${u.id}, ${!u.is_subscriber}, '${u.plan || 'monthly'}')">
             ${u.is_subscriber ? 'Desativar' : 'Ativar'}
+          </button>
+          <button class="btn-mini" style="background:rgba(99,102,241,0.15);color:#a5b4fc;border:1px solid rgba(99,102,241,0.3)" onclick="resetUserPassword(${u.id}, '${u.email}')">
+            Reset Senha
           </button>
         </td>
       </tr>
@@ -1729,6 +1732,18 @@ async function toggleSubscription(userId, activate, plan) {
     loadContacts();
   } catch (err) {
     showToast('Erro ao atualizar assinatura', 'error');
+  }
+}
+
+async function resetUserPassword(userId, email) {
+  const newPass = prompt(`Nova senha para ${email}:\n(mínimo 6 caracteres)`);
+  if (newPass === null) return;
+  if (!newPass || newPass.length < 6) { showToast('Senha mínima de 6 caracteres', 'error'); return; }
+  try {
+    await api('PUT', `/admin/users/${userId}/reset-password`, { password: newPass });
+    showToast(`Senha de ${email} atualizada! ✓`, 'success');
+  } catch (err) {
+    showToast('Erro ao resetar senha', 'error');
   }
 }
 

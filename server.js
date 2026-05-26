@@ -839,6 +839,22 @@ app.get('/api/users', requireAdmin, async (req, res) => {
   }
 });
 
+// PUT reset user password (admin only)
+app.put('/api/admin/users/:id/reset-password', requireAdmin, async (req, res) => {
+  try {
+    const { password } = req.body;
+    if (!password || password.length < 6) return res.status(400).json({ error: 'Senha mínima de 6 caracteres' });
+    const newHash = await bcrypt.hash(password, 10);
+    const { rows } = await pool.query(
+      'UPDATE users SET password_hash = $1 WHERE id = $2 RETURNING email',
+      [newHash, req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Usuário não encontrado' });
+    console.log(`🔑 Admin resetou senha de: ${rows[0].email}`);
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // PUT update user subscription (admin manual)
 app.put('/api/users/:id/subscription', requireAdmin, async (req, res) => {
   try {
