@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Prompt Max — A sua casa de Prompts</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Quicksand:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Quicksand:wght@600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Quicksand:wght@600;700&display=swap" rel="stylesheet"></noscript>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -213,6 +215,15 @@
       .hero h1 { letter-spacing: -2px; } .adm-stats { grid-template-columns: repeat(2,1fr); }
       .admin-wrap { grid-template-columns: 1fr; } .admin-side { display: none; }
       .form-row2 { grid-template-columns: 1fr; } .cards-grid { padding: 0 16px 60px; } nav { padding: 0 16px; }
+
+      /* Performance: remove GPU-heavy effects on mobile */
+      .bg-blobs { display: none; }
+      nav { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(8,11,20,0.92); }
+      .modal-overlay { backdrop-filter: none; -webkit-backdrop-filter: none; }
+      .modal { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(12,15,28,0.99); }
+      .fpill, .search-wrap, .stats-pill { backdrop-filter: none; -webkit-backdrop-filter: none; }
+      .card-badge, .card-bookmark { backdrop-filter: none; -webkit-backdrop-filter: none; }
+      .hero-video-wrap { display: none; }
     }
   </style>
 </head>
@@ -476,7 +487,7 @@ function renderGrid(){
     const c=p.category||'sports';
     const thumbClass='card-thumb-placeholder '+(THUMBS[c]||'');
     const imgHtml=p.image_url
-      ? `<img class="card-thumb" src="${p.image_url}" alt=""
+      ? `<img class="card-thumb" src="${p.image_url}" alt="" loading="lazy"
            style="opacity:0;transition:opacity 0.3s;width:100%;height:100%;object-fit:cover;display:block;"
            onload="this.style.opacity=1;this.nextElementSibling.style.display='none'"
            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
@@ -678,11 +689,12 @@ function showToast(msg,type='success'){const t=document.getElementById('toast');
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
 loadPrompts();
 
-// HLS video background
+// HLS video background — skip on mobile to save bandwidth and GPU
 (function(){
   const vid = document.getElementById('hero-vid');
   const src = 'https://stream.mux.com/4IMYGcL01xjs7ek5ANO17JC4VQVUTsojZlnw4fXzwSxc.m3u8';
   if (!vid) return;
+  if (window.innerWidth <= 768) return;
 
   vid.muted = true;
   vid.loop = true;
