@@ -6,6 +6,7 @@ const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
+const bcrypt = require('bcryptjs');
 
 // ─── EMAIL CONFIG ─────────────────────────────────────────────
 const emailTransporter = nodemailer.createTransport({
@@ -472,8 +473,7 @@ app.post('/api/auth/register', async (req, res) => {
     const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
     if (existing.rows.length) return res.status(400).json({ error: 'Email já cadastrado' });
     
-    // Hash básico (em produção use bcrypt)
-    const password_hash = password ? Buffer.from(password).toString('base64') : null;
+    const password_hash = password ? await bcrypt.hash(password, 10) : null;
     
     const { rows } = await pool.query(
       'INSERT INTO users (email, name, password_hash) VALUES ($1, $2, $3) RETURNING id, email, name, is_subscriber, plan',
@@ -493,13 +493,30 @@ app.post('/api/auth/login', async (req, res) => {
     if (!email) return res.status(400).json({ error: 'Email obrigatório' });
     
     const { rows } = await pool.query(
-      'SELECT id, email, name, is_subscriber, plan FROM users WHERE email = $1',
+      'SELECT id, email, name, is_subscriber, plan, password_hash FROM users WHERE email = $1',
       [email]
     );
-    
+
     if (!rows.length) return res.status(404).json({ error: 'Usuário não encontrado' });
-    
-    res.json(rows[0]);
+
+    if (password && rows[0].password_hash) {
+      const isBcrypt = rows[0].password_hash.startsWith('$2');
+      let valid = false;
+      if (isBcrypt) {
+        valid = await bcrypt.compare(password, rows[0].password_hash);
+      } else {
+        // legado: base64 — migra automaticamente para bcrypt no login
+        valid = Buffer.from(password).toString('base64') === rows[0].password_hash;
+        if (valid) {
+          const upgraded = await bcrypt.hash(password, 10);
+          await pool.query('UPDATE users SET password_hash = $1 WHERE email = $2', [upgraded, email]);
+        }
+      }
+      if (!valid) return res.status(401).json({ error: 'Senha incorreta' });
+    }
+
+    const { password_hash: _, ...safeUser } = rows[0];
+    res.json(safeUser);
   } catch (err) { 
     console.error(err); 
     res.status(500).json({ error: 'Erro ao fazer login' }); 
@@ -535,11 +552,14 @@ app.post('/api/auth/change-password', async (req, res) => {
     if (!new_password || new_password.length < 6) return res.status(400).json({ error: 'Senha deve ter no mínimo 6 caracteres' });
     const { rows } = await pool.query('SELECT password_hash FROM users WHERE email = $1', [email]);
     if (!rows.length) return res.status(404).json({ error: 'Usuário não encontrado' });
-    const currentHash = Buffer.from(current_password).toString('base64');
-    if (rows[0].password_hash && rows[0].password_hash !== currentHash) {
-      return res.status(400).json({ error: 'Senha atual incorreta' });
+    if (rows[0].password_hash) {
+      const isBcrypt = rows[0].password_hash.startsWith('$2');
+      const valid = isBcrypt
+        ? await bcrypt.compare(current_password, rows[0].password_hash)
+        : Buffer.from(current_password).toString('base64') === rows[0].password_hash;
+      if (!valid) return res.status(400).json({ error: 'Senha atual incorreta' });
     }
-    const newHash = Buffer.from(new_password).toString('base64');
+    const newHash = await bcrypt.hash(new_password, 10);
     await pool.query('UPDATE users SET password_hash = $1 WHERE email = $2', [newHash, email]);
     res.json({ ok: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -564,10 +584,57 @@ app.post('/api/auth/forgot-password', async (req, res) => {
       [token, expires, email]
     );
 
-    // TODO: conectar serviço de email (Resend, SendGrid, Nodemailer) e enviar link:
-    // https://promptshouse.com/reset-password?token=${token}
+    const appUrl = process.env.APP_URL || 'https://promptshouse.com';
+    const resetUrl = `${appUrl}/reset-password?token=${token}`;
     console.log(`🔑 Reset token para ${email}: ${token}`);
 
+    await sendEmail({
+      to: email,
+      subject: 'Redefinição de senha — Prompts House',
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;background:#080b14;color:#fff;border-radius:16px;overflow:hidden">
+          <div style="padding:32px;background:linear-gradient(135deg,#f59e0b,#ec4899);text-align:center">
+            <h1 style="margin:0;font-size:28px;color:#08080a">Prompts House</h1>
+            <p style="margin:8px 0 0;color:#08080a;opacity:.8">Redefinição de senha</p>
+          </div>
+          <div style="padding:32px">
+            <p style="font-size:16px">Olá!</p>
+            <p>Recebemos uma solicitação para redefinir sua senha. Clique no botão abaixo para criar uma nova:</p>
+            <div style="text-align:center;margin:28px 0">
+              <a href="${resetUrl}" style="background:linear-gradient(90deg,#f59e0b,#ec4899);color:#08080a;padding:14px 32px;border-radius:50px;text-decoration:none;font-weight:700;font-size:15px">Redefinir senha →</a>
+            </div>
+            <p style="color:#9ca3af;font-size:13px">Este link expira em 1 hora. Se você não solicitou a redefinição, ignore este email.</p>
+            <hr style="border:1px solid rgba(255,255,255,.1);margin:24px 0">
+            <p style="color:#6b7280;font-size:12px;text-align:center">Prompts House · Todos os direitos reservados</p>
+          </div>
+        </div>
+      `,
+    });
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
+// POST reset-password
+app.post('/api/auth/reset-password', async (req, res) => {
+  try {
+    const { token, new_password } = req.body;
+    if (!token || !new_password || new_password.length < 6) {
+      return res.status(400).json({ error: 'Token e senha (mínimo 6 caracteres) são obrigatórios' });
+    }
+    const { rows } = await pool.query(
+      'SELECT id FROM users WHERE reset_token = $1 AND reset_token_expires > NOW()',
+      [token]
+    );
+    if (!rows.length) return res.status(400).json({ error: 'Token inválido ou expirado' });
+    const newHash = await bcrypt.hash(new_password, 10);
+    await pool.query(
+      'UPDATE users SET password_hash = $1, reset_token = NULL, reset_token_expires = NULL WHERE id = $2',
+      [newHash, rows[0].id]
+    );
     res.json({ ok: true });
   } catch (err) {
     console.error(err);
@@ -700,6 +767,12 @@ function verifyAdminToken(token) {
   } catch { return false; }
 }
 
+function requireAdmin(req, res, next) {
+  const token = req.headers['x-admin-token'];
+  if (!token || !verifyAdminToken(token)) return res.status(401).json({ error: 'Não autorizado' });
+  next();
+}
+
 // POST /api/admin/auth — validate admin password, return signed token
 app.post('/api/admin/auth', (req, res) => {
   const { password } = req.body;
@@ -719,7 +792,7 @@ app.get('/api/admin/verify', (req, res) => {
 });
 
 // GET all users (admin)
-app.get('/api/users', async (req, res) => {
+app.get('/api/users', requireAdmin, async (req, res) => {
   try {
     const { rows } = await pool.query(`
       SELECT
@@ -737,14 +810,16 @@ app.get('/api/users', async (req, res) => {
 });
 
 // PUT update user subscription (admin manual)
-app.put('/api/users/:id/subscription', async (req, res) => {
+app.put('/api/users/:id/subscription', requireAdmin, async (req, res) => {
   try {
     const { is_subscriber, plan } = req.body;
     const subscribed_at = is_subscriber ? new Date() : null;
-    
+    const planDays = plan === 'annual' ? 365 : 30;
+    const expires_at = is_subscriber ? new Date(Date.now() + planDays * 24 * 60 * 60 * 1000) : null;
+
     const { rows } = await pool.query(
-      'UPDATE users SET is_subscriber = $1, plan = $2, subscribed_at = $3 WHERE id = $4 RETURNING *',
-      [is_subscriber, plan, subscribed_at, req.params.id]
+      'UPDATE users SET is_subscriber = $1, plan = $2, subscribed_at = $3, subscription_expires_at = $4 WHERE id = $5 RETURNING *',
+      [is_subscriber, plan, subscribed_at, expires_at, req.params.id]
     );
     
     if (!rows.length) return res.status(404).json({ error: 'Usuário não encontrado' });
@@ -759,6 +834,15 @@ app.put('/api/users/:id/subscription', async (req, res) => {
 
 app.post('/api/webhook/kiwify', async (req, res) => {
   try {
+    const webhookToken = process.env.KIWIFY_WEBHOOK_TOKEN;
+    if (webhookToken) {
+      const received = req.query.token || req.headers['x-kiwify-token'];
+      if (received !== webhookToken) {
+        console.log('⚠️ Webhook rejeitado: token inválido');
+        return res.status(401).json({ error: 'Token inválido' });
+      }
+    }
+
     console.log('🔔 Webhook Kiwify recebido:', JSON.stringify(req.body));
 
     const { event, Customer: customer, Product: product, order_status, subscription_status } = req.body;
@@ -783,7 +867,7 @@ app.post('/api/webhook/kiwify', async (req, res) => {
 
       // Gerar senha aleatória apenas para usuários novos
       const plainPassword = isNewUser ? crypto.randomBytes(5).toString('hex') : null;
-      const passwordHash = plainPassword ? Buffer.from(plainPassword).toString('base64') : undefined;
+      const passwordHash = plainPassword ? await bcrypt.hash(plainPassword, 10) : undefined;
 
       if (isNewUser) {
         await pool.query(
