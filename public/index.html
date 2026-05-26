@@ -1399,7 +1399,8 @@ function noRows(m='Nenhum prompt ainda.'){return`<tr><td colspan="5" style="text
 async function openEdit(id,e){
   e.stopPropagation();
   try{
-    const p=await api('GET',`/prompts/${id}`);
+    // Usa endpoint admin dedicado que retorna texto descriptografado para edição
+    const p=await api('GET',`/admin/prompts/${id}`);
     document.getElementById('e-id').value=p.id;
     document.getElementById('e-title').value=p.title;
     document.getElementById('e-desc').value=p.description||'';

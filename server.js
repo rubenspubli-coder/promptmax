@@ -356,9 +356,11 @@ app.get('/api/prompts', async (req, res) => {
     }
 
     // Processar prompts PRO (desencriptar ou ocultar)
+    // Nota: isAdmin NÃO dá acesso ao conteúdo PRO — apenas assinatura válida dá.
+    // O admin acessa conteúdo PRO via endpoint dedicado /api/admin/prompts/:id.
     const filteredRows = rows.map(prompt => {
       if (prompt.tipo === 'pro') {
-        if (isAdmin || isSubscriber) {
+        if (isSubscriber) {
           return { ...prompt, prompt_text: decryptPrompt(prompt.prompt_text) };
         } else {
           return { ...prompt, prompt_text: '🔒 Conteúdo exclusivo para assinantes PRO' };
@@ -397,8 +399,9 @@ app.get('/api/prompts/:id', async (req, res) => {
     }
 
     // Processar prompt PRO (desencriptar ou ocultar)
+    // isAdmin NÃO desbloqueia aqui — use /api/admin/prompts/:id para edição.
     if (prompt.tipo === 'pro') {
-      if (isAdmin || isSubscriber) {
+      if (isSubscriber) {
         prompt.prompt_text = decryptPrompt(prompt.prompt_text);
       } else {
         prompt.prompt_text = '🔒 Conteúdo exclusivo para assinantes PRO';
@@ -877,6 +880,19 @@ function getAuthEmail(req) {
   if (verified) return verified.email;
   return req.headers['x-user-email'] || null; // fallback legado
 }
+
+// GET /api/admin/prompts/:id — retorna prompt com texto descriptografado para edição (admin only)
+app.get('/api/admin/prompts/:id', requireAdmin, async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT * FROM prompts WHERE id = $1', [req.params.id]);
+    if (!rows.length) return res.status(404).json({ error: 'Prompt não encontrado' });
+    const prompt = rows[0];
+    if (prompt.tipo === 'pro') {
+      prompt.prompt_text = decryptPrompt(prompt.prompt_text);
+    }
+    res.json(prompt);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
 
 // GET /api/admin/prompts-debug — mostra estado real dos prompts PRO (admin only)
 app.get('/api/admin/prompts-debug', requireAdmin, async (req, res) => {
