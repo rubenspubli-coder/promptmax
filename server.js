@@ -232,27 +232,44 @@ async function initDB() {
   if (fixExpired.rowCount > 0)
     console.log(`🔧 Fix1 subscription_expires_at:`, fixExpired.rows.map(r => r.email));
 
-  // Fix 2: is_subscriber=true sem data (ativados antes do fix)
+  // Fix 2: is_subscriber=true sem data — apenas Kiwify (admin accounts devem ficar NULL = permanente)
   const fixNull = await pool.query(`
     UPDATE users SET subscription_expires_at = NOW() + INTERVAL '365 days'
-    WHERE is_subscriber = true AND subscription_expires_at IS NULL
+    WHERE is_subscriber = true
+      AND subscription_expires_at IS NULL
+      AND kiwify_customer_id IS NOT NULL
     RETURNING email
   `);
   if (fixNull.rowCount > 0)
-    console.log(`🔧 Fix2 subscription_expires_at:`, fixNull.rows.map(r => r.email));
+    console.log(`🔧 Fix2 subscription_expires_at Kiwify:`, fixNull.rows.map(r => r.email));
 
   // Fix 3: contas ativadas pelo admin (sem kiwify_customer_id) que foram
-  // indevidamente expiradas pelo auto-expiry antes do deploy deste fix
+  // indevidamente expiradas pelo auto-expiry antes do deploy deste fix.
+  // Conditions relaxadas: qualquer conta sem kiwify, sem is_subscriber,
+  // que tenha subscription_expires_at vencida (sinal de que houve ativação prévia).
+  // Re-ativa com NULL = acesso permanente (nunca auto-expira).
   const fixAdminExpired = await pool.query(`
-    UPDATE users SET is_subscriber = true, subscription_expires_at = NOW() + INTERVAL '365 days'
+    UPDATE users SET is_subscriber = true, subscription_expires_at = NULL
     WHERE is_subscriber = false
       AND kiwify_customer_id IS NULL
-      AND plan IN ('monthly', 'annual')
-      AND subscribed_at IS NOT NULL
+      AND subscription_expires_at IS NOT NULL
+      AND subscription_expires_at < NOW()
     RETURNING email
   `);
   if (fixAdminExpired.rowCount > 0)
     console.log(`🔧 Fix3 reativado contas admin expiradas:`, fixAdminExpired.rows.map(r => r.email));
+
+  // Fix 4: garantia direta — conta master sem Kiwify que ainda esteja inativa
+  // (cobre o caso em que subscription_expires_at=NULL e Fix3 não alcança)
+  const fixMaster = await pool.query(`
+    UPDATE users SET is_subscriber = true, plan = COALESCE(plan, 'annual'), subscription_expires_at = NULL
+    WHERE email = 'rubenspubli@gmail.com'
+      AND is_subscriber = false
+      AND kiwify_customer_id IS NULL
+    RETURNING email
+  `);
+  if (fixMaster.rowCount > 0)
+    console.log(`🔧 Fix4 conta master reativada:`, fixMaster.rows.map(r => r.email));
 
   console.log('✅ Tabela users criada/verificada');
 
@@ -873,8 +890,9 @@ app.put('/api/users/:id/subscription', requireAdmin, async (req, res) => {
   try {
     const { is_subscriber, plan } = req.body;
     const subscribed_at = is_subscriber ? new Date() : null;
-    const planDays = plan === 'annual' ? 365 : 30;
-    const expires_at = is_subscriber ? new Date(Date.now() + planDays * 24 * 60 * 60 * 1000) : null;
+    // Ativações manuais pelo admin = acesso permanente (subscription_expires_at = NULL)
+    // Nunca haverá auto-expiry pois kiwify_customer_id também é NULL nestas contas
+    const expires_at = null;
 
     const { rows } = await pool.query(
       'UPDATE users SET is_subscriber = $1, plan = $2, subscribed_at = $3, subscription_expires_at = $4 WHERE id = $5 RETURNING *',
