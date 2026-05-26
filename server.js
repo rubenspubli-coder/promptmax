@@ -333,24 +333,26 @@ async function initDB() {
 app.get('/api/prompts', async (req, res) => {
   try {
     const { category, search, tipo } = req.query;
-    const userEmail = req.headers['x-user-email']; // Email do usuário logado
-    
+
     let query = 'SELECT * FROM prompts WHERE 1=1';
     const params = [];
     if (category && category !== 'all') { params.push(category); query += ` AND category = $${params.length}`; }
     if (tipo) { params.push(tipo); query += ` AND tipo = $${params.length}`; }
     if (search) { params.push(`%${search}%`); query += ` AND (title ILIKE $${params.length} OR description ILIKE $${params.length})`; }
     query += ' ORDER BY created_at DESC';
-    
+
     const { rows } = await pool.query(query, params);
 
-    // Verificar se é admin ou assinante
+    // Verificar se é admin ou assinante — requer token assinado (nunca confiar em header não verificado)
     const adminToken = req.headers['x-admin-token'];
     const isAdmin = adminToken && verifyAdminToken(adminToken);
     let isSubscriber = false;
-    if (!isAdmin && userEmail) {
-      const userResult = await pool.query('SELECT is_subscriber FROM users WHERE email = $1', [userEmail]);
-      isSubscriber = userResult.rows.length > 0 && userResult.rows[0].is_subscriber;
+    if (!isAdmin) {
+      const verified = verifyUserToken(req.headers['x-user-token']);
+      if (verified) {
+        const userResult = await pool.query('SELECT is_subscriber FROM users WHERE id = $1 AND email = $2', [verified.userId, verified.email]);
+        isSubscriber = userResult.rows.length > 0 && userResult.rows[0].is_subscriber;
+      }
     }
 
     // Processar prompts PRO (desencriptar ou ocultar)
@@ -375,24 +377,24 @@ app.get('/api/prompts', async (req, res) => {
 // GET prompt por ID (com proteção PRO + desencriptação)
 app.get('/api/prompts/:id', async (req, res) => {
   try {
-    const userEmail = req.headers['x-user-email'];
-    
     await pool.query('UPDATE prompts SET views = views + 1 WHERE id = $1', [req.params.id]);
     const { rows } = await pool.query('SELECT * FROM prompts WHERE id = $1', [req.params.id]);
-    
+
     if (!rows.length) return res.status(404).json({ error: 'Prompt não encontrado' });
-    
+
     const prompt = rows[0];
-    
-    // Verificar se usuário é assinante
-    let isSubscriber = false;
-    if (userEmail) {
-      const userResult = await pool.query('SELECT is_subscriber FROM users WHERE email = $1', [userEmail]);
-      isSubscriber = userResult.rows.length > 0 && userResult.rows[0].is_subscriber;
-    }
-    
+
+    // Verificar acesso — requer token assinado
     const adminToken = req.headers['x-admin-token'];
     const isAdmin = adminToken && verifyAdminToken(adminToken);
+    let isSubscriber = false;
+    if (!isAdmin) {
+      const verified = verifyUserToken(req.headers['x-user-token']);
+      if (verified) {
+        const userResult = await pool.query('SELECT is_subscriber FROM users WHERE id = $1 AND email = $2', [verified.userId, verified.email]);
+        isSubscriber = userResult.rows.length > 0 && userResult.rows[0].is_subscriber;
+      }
+    }
 
     // Processar prompt PRO (desencriptar ou ocultar)
     if (prompt.tipo === 'pro') {
@@ -532,7 +534,9 @@ app.post('/api/auth/register', async (req, res) => {
       'INSERT INTO users (email, name, password_hash) VALUES ($1, $2, $3) RETURNING id, email, name, is_subscriber, plan',
       [email, name, password_hash]
     );
-    res.json(rows[0]);
+    const newUser = rows[0];
+    newUser.token = generateUserToken(newUser.id, newUser.email);
+    res.json(newUser);
   } catch (err) { 
     console.error(err); 
     res.status(500).json({ error: 'Erro ao cadastrar' }); 
@@ -569,17 +573,25 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     const { password_hash: _, ...safeUser } = rows[0];
+    safeUser.token = generateUserToken(safeUser.id, safeUser.email);
     res.json(safeUser);
-  } catch (err) { 
-    console.error(err); 
-    res.status(500).json({ error: 'Erro ao fazer login' }); 
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao fazer login' });
   }
 });
 
 // GET verificar status de assinatura (chamado no load da página)
 app.get('/api/auth/me', async (req, res) => {
   try {
-    const email = req.headers['x-user-email'];
+    // Aceita x-user-token (novo, seguro) ou x-user-email (legado, apenas para /me)
+    let email = null;
+    const verified = verifyUserToken(req.headers['x-user-token']);
+    if (verified) {
+      email = verified.email;
+    } else {
+      email = req.headers['x-user-email']; // fallback legado só para este endpoint
+    }
     if (!email) return res.status(401).json({ error: 'Não autenticado' });
     const { rows } = await pool.query(
       'SELECT id, email, name, is_subscriber, plan, subscription_expires_at, kiwify_customer_id FROM users WHERE email = $1',
@@ -593,14 +605,16 @@ app.get('/api/auth/me', async (req, res) => {
       await pool.query('UPDATE users SET is_subscriber = false WHERE email = $1', [email]);
       u.is_subscriber = false;
     }
-    res.json(u);
+    // Retorna token atualizado (caso o usuário ainda use token legado)
+    const token = generateUserToken(u.id, u.email);
+    res.json({ ...u, token });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // POST trocar senha
 app.post('/api/auth/change-password', async (req, res) => {
   try {
-    const email = req.headers['x-user-email'];
+    const email = getAuthEmail(req);
     if (!email) return res.status(401).json({ error: 'Não autenticado' });
     const { current_password, new_password } = req.body;
     if (!new_password || new_password.length < 6) return res.status(400).json({ error: 'Senha deve ter no mínimo 6 caracteres' });
@@ -699,7 +713,7 @@ app.post('/api/auth/reset-password', async (req, res) => {
 // PUT /api/auth/profile — atualizar nome do usuário
 app.put('/api/auth/profile', async (req, res) => {
   try {
-    const email = req.headers['x-user-email'];
+    const email = getAuthEmail(req);
     if (!email) return res.status(401).json({ error: 'Não autenticado' });
     const { name } = req.body;
     if (!name || !name.trim()) return res.status(400).json({ error: 'Nome obrigatório' });
@@ -715,7 +729,7 @@ app.put('/api/auth/profile', async (req, res) => {
 // POST /api/auth/cancel-subscription — cancelar assinatura
 app.post('/api/auth/cancel-subscription', async (req, res) => {
   try {
-    const email = req.headers['x-user-email'];
+    const email = getAuthEmail(req);
     if (!email) return res.status(401).json({ error: 'Não autenticado' });
 
     const { rows } = await pool.query(
@@ -821,10 +835,47 @@ function verifyAdminToken(token) {
   } catch { return false; }
 }
 
+// ─── USER SESSION TOKENS (HMAC-assinados, sem DB) ─────────────
+const USER_TOKEN_SECRET = process.env.JWT_SECRET || ENCRYPTION_KEY;
+
+function generateUserToken(userId, email) {
+  const payload = `${userId}:${email}`;
+  const sig = crypto.createHmac('sha256', USER_TOKEN_SECRET).update(payload).digest('hex');
+  return Buffer.from(`${payload}:${sig}`).toString('base64');
+}
+
+function verifyUserToken(token) {
+  if (!token) return null;
+  try {
+    const decoded = Buffer.from(token, 'base64').toString('utf8');
+    const lastColon = decoded.lastIndexOf(':');
+    const payload = decoded.slice(0, lastColon);
+    const sig     = decoded.slice(lastColon + 1);
+    const expected = crypto.createHmac('sha256', USER_TOKEN_SECRET).update(payload).digest('hex');
+    // timing-safe compare
+    const sBuf = Buffer.from(sig,      'hex');
+    const eBuf = Buffer.from(expected, 'hex');
+    if (sBuf.length !== eBuf.length) return null;
+    if (!crypto.timingSafeEqual(sBuf, eBuf)) return null;
+    const firstColon = payload.indexOf(':');
+    const userId = parseInt(payload.slice(0, firstColon));
+    const email  = payload.slice(firstColon + 1);
+    if (!userId || !email) return null;
+    return { userId, email };
+  } catch { return null; }
+}
+
 function requireAdmin(req, res, next) {
   const token = req.headers['x-admin-token'];
   if (!token || !verifyAdminToken(token)) return res.status(401).json({ error: 'Não autorizado' });
   next();
+}
+
+// Helper: extrai email autenticado do request (token verificado ou fallback legado)
+function getAuthEmail(req) {
+  const verified = verifyUserToken(req.headers['x-user-token']);
+  if (verified) return verified.email;
+  return req.headers['x-user-email'] || null; // fallback legado
 }
 
 // GET /api/admin/prompts-debug — mostra estado real dos prompts PRO (admin only)

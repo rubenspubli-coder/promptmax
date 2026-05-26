@@ -992,6 +992,8 @@ async function syncUserFromServer(){
   if(!user?.email) return;
   try {
     const fresh = await api('GET', '/auth/me');
+    // Servidor pode retornar token atualizado — salvar separado, não junto ao perfil
+    if (fresh.token) { localStorage.setItem('ph_user_token', fresh.token); delete fresh.token; }
     localStorage.setItem('ph_current_user', JSON.stringify(fresh));
     isSubscriber = fresh.is_subscriber === true;
     renderGrid();
@@ -1001,6 +1003,7 @@ async function syncUserFromServer(){
     // Usuário não encontrado — limpar sessão
     if(e.message.includes('404')) {
       localStorage.removeItem('ph_current_user');
+      localStorage.removeItem('ph_user_token');
       isSubscriber = false;
     }
   }
@@ -1049,6 +1052,7 @@ document.addEventListener('click', e => {
 
 function logout(){
   localStorage.removeItem('ph_current_user');
+  localStorage.removeItem('ph_user_token');
   isSubscriber = false;
   const banner = document.getElementById('upgrade-banner');
   if(banner) banner.remove();
@@ -1124,9 +1128,14 @@ function showUpgradeBanner(){
 // ── API ──────────────────────────────────────────────────────
 async function api(method,path,body){
   const o={method,headers:{'Content-Type':'application/json'}};
-  const currentUser = JSON.parse(localStorage.getItem('ph_current_user') || 'null');
-  if (currentUser && currentUser.email) {
-    o.headers['x-user-email'] = currentUser.email;
+  // Autenticação: usa token HMAC assinado (seguro) — nunca envia email cru
+  const userToken = localStorage.getItem('ph_user_token');
+  if (userToken) {
+    o.headers['x-user-token'] = userToken;
+  } else {
+    // Fallback legado: usuários logados antes do deploy deste fix
+    const currentUser = JSON.parse(localStorage.getItem('ph_current_user') || 'null');
+    if (currentUser && currentUser.email) o.headers['x-user-email'] = currentUser.email;
   }
   const adminToken = localStorage.getItem('ph_admin_token');
   if (adminToken) {
@@ -1564,6 +1573,7 @@ async function submitLogin() {
   try {
     const user = await api('POST', '/auth/login', { email, password: pass });
     localStorage.removeItem('ph_admin_token'); // garante que sessão admin não persiste
+    if (user.token) { localStorage.setItem('ph_user_token', user.token); delete user.token; }
     localStorage.setItem('ph_current_user', JSON.stringify(user));
     showToast('Login realizado! ✓', 'success');
     closeAuthModal();
@@ -1582,6 +1592,7 @@ async function submitRegister() {
   try {
     const user = await api('POST', '/auth/register', { name, email, password: pass });
     localStorage.removeItem('ph_admin_token'); // garante que sessão admin não persiste
+    if (user.token) { localStorage.setItem('ph_user_token', user.token); delete user.token; }
     localStorage.setItem('ph_current_user', JSON.stringify(user));
     showToast('Cadastro realizado! ✓', 'success');
     closeAuthModal();
