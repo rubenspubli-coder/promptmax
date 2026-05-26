@@ -221,8 +221,7 @@ async function initDB() {
     await pool.query(sql).catch(e => console.log(`⚠️ Migration skip: ${e.message}`));
   }
 
-  // Fix: usuários marcados como assinantes mas com data de expiração vencida
-  // (causado pelo bug do admin que não resetava subscription_expires_at)
+  // Fix 1: is_subscriber=true mas data vencida (admin não resetava subscription_expires_at)
   const fixExpired = await pool.query(`
     UPDATE users SET subscription_expires_at = NOW() + INTERVAL '365 days'
     WHERE is_subscriber = true
@@ -231,16 +230,29 @@ async function initDB() {
     RETURNING email
   `);
   if (fixExpired.rowCount > 0)
-    console.log(`🔧 Corrigido subscription_expires_at para ${fixExpired.rowCount} usuário(s):`, fixExpired.rows.map(r => r.email));
+    console.log(`🔧 Fix1 subscription_expires_at:`, fixExpired.rows.map(r => r.email));
 
-  // Fix: usuários ativados manualmente sem subscription_expires_at (admin antigo)
+  // Fix 2: is_subscriber=true sem data (ativados antes do fix)
   const fixNull = await pool.query(`
     UPDATE users SET subscription_expires_at = NOW() + INTERVAL '365 days'
     WHERE is_subscriber = true AND subscription_expires_at IS NULL
     RETURNING email
   `);
   if (fixNull.rowCount > 0)
-    console.log(`🔧 Definido subscription_expires_at para ${fixNull.rowCount} usuário(s) sem data:`, fixNull.rows.map(r => r.email));
+    console.log(`🔧 Fix2 subscription_expires_at:`, fixNull.rows.map(r => r.email));
+
+  // Fix 3: contas ativadas pelo admin (sem kiwify_customer_id) que foram
+  // indevidamente expiradas pelo auto-expiry antes do deploy deste fix
+  const fixAdminExpired = await pool.query(`
+    UPDATE users SET is_subscriber = true, subscription_expires_at = NOW() + INTERVAL '365 days'
+    WHERE is_subscriber = false
+      AND kiwify_customer_id IS NULL
+      AND plan IN ('monthly', 'annual')
+      AND subscribed_at IS NOT NULL
+    RETURNING email
+  `);
+  if (fixAdminExpired.rowCount > 0)
+    console.log(`🔧 Fix3 reativado contas admin expiradas:`, fixAdminExpired.rows.map(r => r.email));
 
   console.log('✅ Tabela users criada/verificada');
 
@@ -551,13 +563,14 @@ app.get('/api/auth/me', async (req, res) => {
     const email = req.headers['x-user-email'];
     if (!email) return res.status(401).json({ error: 'Não autenticado' });
     const { rows } = await pool.query(
-      'SELECT id, email, name, is_subscriber, plan, subscription_expires_at FROM users WHERE email = $1',
+      'SELECT id, email, name, is_subscriber, plan, subscription_expires_at, kiwify_customer_id FROM users WHERE email = $1',
       [email]
     );
     if (!rows.length) return res.status(404).json({ error: 'Usuário não encontrado' });
     const u = rows[0];
-    // Expirar assinatura automaticamente
-    if (u.is_subscriber && u.subscription_expires_at && new Date(u.subscription_expires_at) < new Date()) {
+    // Auto-expiry apenas para assinantes Kiwify (kiwify_customer_id preenchido)
+    // Contas ativadas manualmente pelo admin nunca expiram automaticamente
+    if (u.is_subscriber && u.kiwify_customer_id && u.subscription_expires_at && new Date(u.subscription_expires_at) < new Date()) {
       await pool.query('UPDATE users SET is_subscriber = false WHERE email = $1', [email]);
       u.is_subscriber = false;
     }
