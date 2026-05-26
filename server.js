@@ -220,6 +220,28 @@ async function initDB() {
   for (const sql of userMigrations) {
     await pool.query(sql).catch(e => console.log(`⚠️ Migration skip: ${e.message}`));
   }
+
+  // Fix: usuários marcados como assinantes mas com data de expiração vencida
+  // (causado pelo bug do admin que não resetava subscription_expires_at)
+  const fixExpired = await pool.query(`
+    UPDATE users SET subscription_expires_at = NOW() + INTERVAL '365 days'
+    WHERE is_subscriber = true
+      AND subscription_expires_at IS NOT NULL
+      AND subscription_expires_at < NOW()
+    RETURNING email
+  `);
+  if (fixExpired.rowCount > 0)
+    console.log(`🔧 Corrigido subscription_expires_at para ${fixExpired.rowCount} usuário(s):`, fixExpired.rows.map(r => r.email));
+
+  // Fix: usuários ativados manualmente sem subscription_expires_at (admin antigo)
+  const fixNull = await pool.query(`
+    UPDATE users SET subscription_expires_at = NOW() + INTERVAL '365 days'
+    WHERE is_subscriber = true AND subscription_expires_at IS NULL
+    RETURNING email
+  `);
+  if (fixNull.rowCount > 0)
+    console.log(`🔧 Definido subscription_expires_at para ${fixNull.rowCount} usuário(s) sem data:`, fixNull.rows.map(r => r.email));
+
   console.log('✅ Tabela users criada/verificada');
 
   // Criar tabela site_config para configurações visuais
@@ -772,6 +794,14 @@ function requireAdmin(req, res, next) {
   if (!token || !verifyAdminToken(token)) return res.status(401).json({ error: 'Não autorizado' });
   next();
 }
+
+// GET /api/admin/prompts-debug — mostra estado real dos prompts PRO (admin only)
+app.get('/api/admin/prompts-debug', requireAdmin, async (req, res) => {
+  try {
+    const { rows } = await pool.query(`SELECT id, title, tipo, CASE WHEN prompt_text IS NULL THEN 'NULL' WHEN length(prompt_text) < 97 THEN 'PLAIN_TEXT' ELSE 'ENCRYPTED' END AS text_status, length(prompt_text) AS text_length FROM prompts WHERE tipo = 'pro' ORDER BY id`);
+    res.json(rows);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
 
 // POST /api/admin/auth — validate admin password, return signed token
 app.post('/api/admin/auth', (req, res) => {
