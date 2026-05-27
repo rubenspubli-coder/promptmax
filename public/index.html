@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Prompts House — A sua casa de Prompts</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Bebas+Neue&family=Quicksand:wght@600;700&family=Montserrat:wght@700;800&family=Poppins:wght@600;700;800&family=Raleway:wght@700;800&family=Oswald:wght@500;600;700&family=Playfair+Display:wght@700;800&family=Nunito:wght@700;800;900&family=Roboto:wght@700;900&family=Open+Sans:wght@700;800&family=Lato:wght@700;900&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Bebas+Neue&family=Quicksand:wght@600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Bebas+Neue&family=Quicksand:wght@600;700&display=swap" rel="stylesheet"></noscript>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -391,6 +393,25 @@
       .sub-plans { padding: 0 20px; }
       .sub-footer { padding: 0 20px 24px; } .admin-side { display: none; }
       .form-row2 { grid-template-columns: 1fr; } .cards-grid { padding: 0 16px 60px; } nav { padding: 0 16px; }
+
+      /* Performance: desativa efeitos GPU-pesados no mobile */
+      .bg-blobs { display: none; }
+      .hero-video-wrap { display: none; }
+      nav { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(8,11,20,0.95); }
+      .mobile-menu { backdrop-filter: none; -webkit-backdrop-filter: none; }
+      .mobile-footer-bar { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(8,11,20,0.98); }
+      .stats-pill { backdrop-filter: none; -webkit-backdrop-filter: none; }
+      .fpill { backdrop-filter: none; -webkit-backdrop-filter: none; }
+      .card-bookmark { backdrop-filter: none; -webkit-backdrop-filter: none; }
+      .modal-overlay { backdrop-filter: none; -webkit-backdrop-filter: none; }
+      .modal { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(12,15,28,0.99); }
+      .auth-overlay { backdrop-filter: none; -webkit-backdrop-filter: none; }
+      .auth-modal { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(12,15,28,0.99); }
+      .sub-overlay { backdrop-filter: none; -webkit-backdrop-filter: none; }
+      .sub-modal { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(10,12,24,0.99); }
+      .admin-auth-overlay { backdrop-filter: none; -webkit-backdrop-filter: none; }
+      .admin-auth-modal { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(10,12,24,0.99); }
+      .toast { backdrop-filter: none; -webkit-backdrop-filter: none; }
     }
     
     /* ADMIN SUBSCRIPTION MANAGEMENT */
@@ -496,6 +517,8 @@
       </div>
     </div>
     <div class="cards-grid" id="cards-grid"><div class="empty-msg">Carregando prompts...</div></div>
+    <div id="scroll-sentinel" style="height:1px;margin-top:-1px"></div>
+    <div id="scroll-loader" style="display:none;text-align:center;padding:32px;color:rgba(255,255,255,.35);font-size:13px">Carregando mais...</div>
   </div>
 
   <!-- FAVORITOS -->
@@ -935,7 +958,9 @@ const CATS={sports:'Esportes',photo:'Fotografia',video:'Vídeo',influencer:'Infl
 const ICONS={sports:'✦',photo:'✿',video:'▶',influencer:'★',design:'◈'};
 const THUMBS={sports:'thumb-sports',photo:'thumb-photo',video:'thumb-video',influencer:'thumb-influencer',design:'thumb-design'};
 let allPrompts=[],currentFilter='all',currentSearch='',currentPrompt=null;
-let isSubscriber = false; // Controle de assinatura
+let isSubscriber = false;
+const PROMPTS_LIMIT=12;
+let promptsOffset=0,promptsLoading=false,promptsHasMore=true;
 const likedSet=new Set(JSON.parse(localStorage.getItem('pm_likes')||'[]'));
 const savedSet=new Set(JSON.parse(localStorage.getItem('pm_saved')||'[]'));
 
@@ -995,7 +1020,7 @@ async function syncUserFromServer(){
     if (fresh.token) { localStorage.setItem('ph_user_token', fresh.token); delete fresh.token; }
     localStorage.setItem('ph_current_user', JSON.stringify(fresh));
     isSubscriber = fresh.is_subscriber === true;
-    renderGrid();
+    loadPrompts();
     updateNavForUser(fresh);
     if(!fresh.is_subscriber) showUpgradeBanner();
   } catch(e) {
@@ -1056,7 +1081,7 @@ function logout(){
   const banner = document.getElementById('upgrade-banner');
   if(banner) banner.remove();
   updateNavForUser(null);
-  renderGrid();
+  loadPrompts();
   showToast('Você saiu da conta.', 'info');
 }
 
@@ -1101,7 +1126,7 @@ async function confirmCancelSubscription(){
     localStorage.setItem('ph_current_user', JSON.stringify(user));
     isSubscriber = false;
     document.getElementById('profile-modal').classList.remove('open');
-    renderGrid();
+    loadPrompts();
     showToast('Assinatura cancelada. Você receberá um email de confirmação.', 'info');
   } catch(err){ showToast('Erro ao cancelar: ' + err.message, 'error'); }
 }
@@ -1153,17 +1178,46 @@ async function apiForm(method,path,formData){
 }
 
 async function loadPrompts(){
+  promptsOffset=0; promptsHasMore=true; allPrompts=[];
+  document.getElementById('cards-grid').innerHTML='<div class="empty-msg">Carregando prompts...</div>';
+  await loadMore();
   try{
-    console.log('🔄 Carregando prompts do backend...');
-    allPrompts=await api('GET','/prompts');
-    console.log('✅ Prompts carregados:', allPrompts.length, allPrompts);
-    renderGrid();
-    const views=allPrompts.reduce((a,p)=>a+(p.views||0),0);
-    animCount('hero-total',allPrompts.length);
-    animCount('hero-views',views>=1000?Math.round(views/1000):views,views>=1000?'k':'');
+    const s=await api('GET','/stats');
+    animCount('hero-total',s.total);
+    animCount('hero-views',s.views>=1000?Math.round(s.views/1000):s.views,s.views>=1000?'k':'');
+  }catch(e){}
+}
+
+async function loadMore(){
+  if(promptsLoading||!promptsHasMore)return;
+  promptsLoading=true;
+  document.getElementById('scroll-loader').style.display='block';
+  try{
+    const params=new URLSearchParams({limit:PROMPTS_LIMIT,offset:promptsOffset});
+    if(currentFilter!=='all')params.set('category',currentFilter);
+    if(currentSearch)params.set('search',currentSearch);
+    const headers={'Content-Type':'application/json'};
+    const ut=localStorage.getItem('ph_user_token');
+    if(ut)headers['x-user-token']=ut;
+    else{const cu=JSON.parse(localStorage.getItem('ph_current_user')||'null');if(cu&&cu.email)headers['x-user-email']=cu.email;}
+    const at=localStorage.getItem('ph_admin_token');
+    if(at)headers['x-admin-token']=at;
+    const r=await fetch('/api/prompts?'+params,{headers});
+    if(!r.ok)throw new Error();
+    const {data,total}=await r.json();
+    promptsHasMore=promptsOffset+data.length<total;
+    const grid=document.getElementById('cards-grid');
+    if(promptsOffset===0){
+      grid.innerHTML=data.length?'':'<div class="empty-msg">Nenhum prompt encontrado.</div>';
+    }
+    if(data.length){grid.insertAdjacentHTML('beforeend',data.map(makeCard).join(''));activateLazyLoading();}
+    allPrompts=allPrompts.concat(data);
+    promptsOffset+=data.length;
   }catch(e){
-    console.error('❌ Erro ao carregar prompts:', e);
-    document.getElementById('cards-grid').innerHTML='<div class="empty-msg">Erro ao carregar. Verifique a conexão.</div>';
+    if(promptsOffset===0)document.getElementById('cards-grid').innerHTML='<div class="empty-msg">Erro ao carregar. Verifique a conexão.</div>';
+  }finally{
+    promptsLoading=false;
+    document.getElementById('scroll-loader').style.display='none';
   }
 }
 
@@ -1262,8 +1316,9 @@ function activateLazyLoading() {
 }
 
 function fv(v){if(!v)return'0';return v>=1000?(v/1000).toFixed(1)+'k':v;}
-function setFilter(btn,cat){document.querySelectorAll('.fpill').forEach(b=>b.classList.remove('active'));btn.classList.add('active');currentFilter=cat;renderGrid();}
-function handleSearch(val){currentSearch=val.toLowerCase();renderGrid();}
+let _searchTimer;
+function setFilter(btn,cat){document.querySelectorAll('.fpill').forEach(b=>b.classList.remove('active'));btn.classList.add('active');currentFilter=cat;loadPrompts();}
+function handleSearch(val){currentSearch=val.toLowerCase();clearTimeout(_searchTimer);_searchTimer=setTimeout(loadPrompts,350);}
 
 function previewImg(input,previewId){
   const f=input.files[0];
@@ -1760,10 +1815,20 @@ async function resetUserPassword(userId, email) {
   }
 }
 
+// Infinite scroll
+(function(){
+  const sentinel=document.getElementById('scroll-sentinel');
+  if(!sentinel||!('IntersectionObserver' in window))return;
+  new IntersectionObserver(entries=>{
+    if(entries[0].isIntersecting)loadMore();
+  },{rootMargin:'200px'}).observe(sentinel);
+})();
+
 // Video background — src definido dinamicamente pelo config do servidor
 (function(){
   const vid = document.getElementById('hero-vid');
   if (!vid) return;
+  if (window.innerWidth <= 768) return;
   vid.muted = true;
   vid.loop = true;
   vid.playsInline = true;
@@ -1826,7 +1891,7 @@ function applyVisualConfig(config, opts) {
     });
   }
 
-  if (config.video_url && !(opts && opts.skipVideo)) {
+  if (config.video_url && !(opts && opts.skipVideo) && window.innerWidth > 768) {
     document.querySelectorAll('#hero-vid').forEach(vid => vid.src = config.video_url);
   }
 }
