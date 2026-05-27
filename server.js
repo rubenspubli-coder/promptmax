@@ -9,15 +9,20 @@ const nodemailer = require('nodemailer');
 const bcrypt = require('bcryptjs');
 
 // ─── EMAIL CONFIG ─────────────────────────────────────────────
+const SMTP_PORT = parseInt(process.env.SMTP_PORT || '587');
 const emailTransporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: parseInt(process.env.SMTP_PORT || '587'),
-  secure: false,
+  port: SMTP_PORT,
+  secure: SMTP_PORT === 465, // true para SSL (porta 465), false para STARTTLS (porta 587)
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
 });
+
+// SMTP_FROM define o remetente (ex: no-reply@promptshouse.com)
+// Necessário quando SMTP_USER não é um email (ex: Resend usa user="resend")
+const SMTP_FROM = process.env.SMTP_FROM || process.env.SMTP_USER;
 
 async function sendEmail({ to, subject, html }) {
   if (!process.env.SMTP_USER) {
@@ -25,7 +30,7 @@ async function sendEmail({ to, subject, html }) {
     return;
   }
   await emailTransporter.sendMail({
-    from: `"Prompts House" <${process.env.SMTP_USER}>`,
+    from: `"Prompts House" <${SMTP_FROM}>`,
     to, subject, html,
   });
   console.log(`✅ Email enviado para ${to}`);
