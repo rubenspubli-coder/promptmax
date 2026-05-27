@@ -1789,6 +1789,9 @@ async function loadContacts() {
           <button class="btn-mini" style="background:rgba(99,102,241,0.15);color:#a5b4fc;border:1px solid rgba(99,102,241,0.3)" onclick="resetUserPassword(${u.id}, '${u.email}')">
             Reset Senha
           </button>
+          <button class="btn-mini" style="background:rgba(245,158,11,0.15);color:#fcd34d;border:1px solid rgba(245,158,11,0.3)" onclick="resendCredentials(${u.id}, '${escHtml(u.email)}')">
+            Reenviar Acesso
+          </button>
         </td>
       </tr>
     `).join('') || '<tr><td colspan="6" style="text-align:center; padding:40px; color:var(--muted);">Nenhum usuário cadastrado</td></tr>';
@@ -1804,6 +1807,16 @@ async function toggleSubscription(userId, activate, plan) {
     loadContacts();
   } catch (err) {
     showToast('Erro ao atualizar assinatura', 'error');
+  }
+}
+
+async function resendCredentials(userId, email) {
+  if (!confirm(`Gerar nova senha e enviar email de acesso para:\n${email}`)) return;
+  try {
+    await api('POST', `/admin/users/${userId}/resend-credentials`, {});
+    showToast(`Email de acesso enviado para ${email}! ✓`, 'success');
+  } catch (err) {
+    showToast('Erro ao reenviar: ' + err.message, 'error');
   }
 }
 

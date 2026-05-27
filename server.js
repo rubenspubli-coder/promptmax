@@ -951,6 +951,53 @@ app.get('/api/users', requireAdmin, async (req, res) => {
   }
 });
 
+// POST resend credentials email (admin only) — gera nova senha temp e envia email
+app.post('/api/admin/users/:id/resend-credentials', requireAdmin, async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT id, email, name, plan FROM users WHERE id = $1',
+      [req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Usuário não encontrado' });
+    const user = rows[0];
+
+    const plainPassword = crypto.randomBytes(5).toString('hex');
+    const passwordHash = await bcrypt.hash(plainPassword, 10);
+    await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [passwordHash, user.id]);
+
+    const planLabel = KIWIFY_PLANS[user.plan]?.label || 'Premium';
+    await sendEmail({
+      to: user.email,
+      subject: '🔑 Seus dados de acesso — Prompts House',
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;background:#080b14;color:#fff;border-radius:16px;overflow:hidden">
+          <div style="padding:32px;background:linear-gradient(135deg,#f59e0b,#ec4899);text-align:center">
+            <h1 style="margin:0;font-size:28px;color:#08080a">Prompts House</h1>
+            <p style="margin:8px 0 0;color:#08080a;opacity:.8">Seus dados de acesso</p>
+          </div>
+          <div style="padding:32px">
+            <p style="font-size:16px">Olá, <strong>${user.name || user.email}</strong>!</p>
+            <p>Sua assinatura <strong>${planLabel}</strong> está ativa. Aqui estão seus dados de acesso:</p>
+            <div style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:20px;margin:20px 0">
+              <p style="margin:0 0 8px"><span style="color:#9ca3af">Email:</span> <strong>${user.email}</strong></p>
+              <p style="margin:0"><span style="color:#9ca3af">Senha:</span> <strong style="font-size:18px;letter-spacing:2px">${plainPassword}</strong></p>
+            </div>
+            <p style="color:#9ca3af;font-size:13px">Recomendamos que você troque sua senha após o primeiro login, na seção "Minha Conta".</p>
+            <div style="text-align:center;margin:28px 0">
+              <a href="https://promptshouse.com" style="background:linear-gradient(90deg,#f59e0b,#ec4899);color:#08080a;padding:14px 32px;border-radius:50px;text-decoration:none;font-weight:700;font-size:15px">Acessar o site →</a>
+            </div>
+            <hr style="border:1px solid rgba(255,255,255,.1);margin:24px 0">
+            <p style="color:#6b7280;font-size:12px;text-align:center">Prompts House · Todos os direitos reservados</p>
+          </div>
+        </div>
+      `,
+    });
+
+    console.log(`📧 Credenciais reenviadas para: ${user.email}`);
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // PUT reset user password (admin only)
 app.put('/api/admin/users/:id/reset-password', requireAdmin, async (req, res) => {
   try {
