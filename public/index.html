@@ -396,7 +396,7 @@
 
       /* Performance: desativa efeitos GPU-pesados no mobile */
       .bg-blobs { display: none; }
-      .hero-video-wrap { display: none; }
+      /* hero-video-wrap visível — src carregado com delay para não bloquear */
       nav { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(8,11,20,0.95); }
       .mobile-menu { backdrop-filter: none; -webkit-backdrop-filter: none; }
       .mobile-footer-bar { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(8,11,20,0.98); }
@@ -1828,7 +1828,6 @@ async function resetUserPassword(userId, email) {
 (function(){
   const vid = document.getElementById('hero-vid');
   if (!vid) return;
-  if (window.innerWidth <= 768) return;
   vid.muted = true;
   vid.loop = true;
   vid.playsInline = true;
@@ -1891,8 +1890,10 @@ function applyVisualConfig(config, opts) {
     });
   }
 
-  if (config.video_url && !(opts && opts.skipVideo) && window.innerWidth > 768) {
-    document.querySelectorAll('#hero-vid').forEach(vid => vid.src = config.video_url);
+  if (config.video_url && !(opts && opts.skipVideo)) {
+    const setVideoSrc = () => document.querySelectorAll('#hero-vid').forEach(vid => vid.src = config.video_url);
+    if (window.innerWidth <= 768) setTimeout(setVideoSrc, 500);
+    else setVideoSrc();
   }
 }
 
