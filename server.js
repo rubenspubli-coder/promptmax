@@ -332,14 +332,21 @@ async function initDB() {
 // GET todos os prompts (com proteção PRO + desencriptação)
 app.get('/api/prompts', async (req, res) => {
   try {
-    const { category, search, tipo } = req.query;
+    const { category, search, tipo, limit, offset } = req.query;
+    const isPaginated = limit !== undefined;
 
-    let query = 'SELECT * FROM prompts WHERE 1=1';
+    let whereClause = 'WHERE 1=1';
     const params = [];
-    if (category && category !== 'all') { params.push(category); query += ` AND category = $${params.length}`; }
-    if (tipo) { params.push(tipo); query += ` AND tipo = $${params.length}`; }
-    if (search) { params.push(`%${search}%`); query += ` AND (title ILIKE $${params.length} OR description ILIKE $${params.length})`; }
-    query += ' ORDER BY created_at DESC';
+    if (category && category !== 'all') { params.push(category); whereClause += ` AND category = $${params.length}`; }
+    if (tipo) { params.push(tipo); whereClause += ` AND tipo = $${params.length}`; }
+    if (search) { params.push(`%${search}%`); whereClause += ` AND (title ILIKE $${params.length} OR description ILIKE $${params.length})`; }
+
+    let query = `SELECT * FROM prompts ${whereClause} ORDER BY created_at DESC`;
+    if (isPaginated) {
+      const lim = Math.min(parseInt(limit) || 12, 100);
+      const off = parseInt(offset) || 0;
+      query += ` LIMIT ${lim} OFFSET ${off}`;
+    }
 
     const { rows } = await pool.query(query, params);
 
@@ -368,11 +375,17 @@ app.get('/api/prompts', async (req, res) => {
       }
       return prompt;
     });
-    
+
+    if (isPaginated) {
+      const countResult = await pool.query(`SELECT COUNT(*) FROM prompts ${whereClause}`, params);
+      const total = parseInt(countResult.rows[0].count);
+      return res.json({ data: filteredRows, total });
+    }
+
     res.json(filteredRows);
-  } catch (err) { 
+  } catch (err) {
     console.error('Erro ao buscar prompts:', err);
-    res.status(500).json({ error: 'Erro ao buscar prompts' }); 
+    res.status(500).json({ error: 'Erro ao buscar prompts' });
   }
 });
 
