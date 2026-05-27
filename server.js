@@ -1044,9 +1044,10 @@ app.post('/api/webhook/kiwify', async (req, res) => {
 
       console.log(`💚 Assinatura ${plan} ativada: ${email} | Expira: ${expiresAt.toISOString()}`);
 
-      // Enviar email com credenciais (somente para novos usuários)
+      const planLabel = KIWIFY_PLANS[plan].label;
+
       if (isNewUser && plainPassword) {
-        const planLabel = KIWIFY_PLANS[plan].label;
+        // Novo usuário: envia email com credenciais de acesso
         await sendEmail({
           to: email,
           subject: '🎉 Bem-vindo ao Prompts House! Aqui estão suas credenciais',
@@ -1064,6 +1065,33 @@ app.post('/api/webhook/kiwify', async (req, res) => {
                   <p style="margin:0"><span style="color:#9ca3af">Senha:</span> <strong style="font-size:18px;letter-spacing:2px">${plainPassword}</strong></p>
                 </div>
                 <p style="color:#9ca3af;font-size:13px">Recomendamos que você troque sua senha após o primeiro login, na seção "Minha Conta".</p>
+                <div style="text-align:center;margin:28px 0">
+                  <a href="https://promptshouse.com" style="background:linear-gradient(90deg,#f59e0b,#ec4899);color:#08080a;padding:14px 32px;border-radius:50px;text-decoration:none;font-weight:700;font-size:15px">Acessar o site →</a>
+                </div>
+                <hr style="border:1px solid rgba(255,255,255,.1);margin:24px 0">
+                <p style="color:#6b7280;font-size:12px;text-align:center">Prompts House · Todos os direitos reservados</p>
+              </div>
+            </div>
+          `,
+        });
+      } else if (!isNewUser) {
+        // Usuário existente: envia confirmação de ativação sem expor senha
+        await sendEmail({
+          to: email,
+          subject: '✅ Sua assinatura Prompts House está ativa!',
+          html: `
+            <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;background:#080b14;color:#fff;border-radius:16px;overflow:hidden">
+              <div style="padding:32px;background:linear-gradient(135deg,#f59e0b,#ec4899);text-align:center">
+                <h1 style="margin:0;font-size:28px;color:#08080a">Prompts House</h1>
+                <p style="margin:8px 0 0;color:#08080a;opacity:.8">Assinatura ativada!</p>
+              </div>
+              <div style="padding:32px">
+                <p style="font-size:16px">Olá, <strong>${name}</strong>!</p>
+                <p>Sua assinatura <strong>${planLabel}</strong> foi ativada com sucesso.</p>
+                <p>Acesse o site com seu email e senha habituais para desbloquear todos os prompts premium:</p>
+                <div style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:20px;margin:20px 0">
+                  <p style="margin:0"><span style="color:#9ca3af">Email:</span> <strong>${email}</strong></p>
+                </div>
                 <div style="text-align:center;margin:28px 0">
                   <a href="https://promptshouse.com" style="background:linear-gradient(90deg,#f59e0b,#ec4899);color:#08080a;padding:14px 32px;border-radius:50px;text-decoration:none;font-weight:700;font-size:15px">Acessar o site →</a>
                 </div>
