@@ -1173,7 +1173,10 @@ async function api(method,path,body){
 }
 
 async function apiForm(method,path,formData){
-  const r=await fetch('/api'+path,{method,body:formData});
+  const headers={};
+  const adminToken=localStorage.getItem('ph_admin_token');
+  if(adminToken)headers['x-admin-token']=adminToken;
+  const r=await fetch('/api'+path,{method,body:formData,headers});
   if(!r.ok)throw new Error(await r.text());
   return r.json();
 }
@@ -1257,8 +1260,8 @@ function makeCard(p){
         <div class="card-avatar">PM</div>
         <span class="card-author-name">@promptshouse</span>
       </div>
-      <div class="card-name">${p.title}</div>
-      <div class="card-desc">${p.description||''}</div>
+      <div class="card-name">${escHtml(p.title||'')}</div>
+      <div class="card-desc">${escHtml(p.description||'')}</div>
       <div class="card-footer">
         <div class="card-stats">
           <span class="card-stat">
@@ -1774,8 +1777,8 @@ async function loadContacts() {
     const users = await api('GET', '/users');
     tbody.innerHTML = users.map(u => `
       <tr>
-        <td>${u.name || '-'}</td>
-        <td>${u.email}</td>
+        <td>${escHtml(u.name || '-')}</td>
+        <td>${escHtml(u.email)}</td>
         <td><span class="status-badge ${u.is_subscriber ? 'active' : 'inactive'}">${u.is_subscriber ? 'ATIVO' : 'INATIVO'}</span></td>
         <td>${u.plan || '-'}</td>
         <td>${u.subscribed_at ? new Date(u.subscribed_at).toLocaleDateString('pt-BR') : '-'}</td>

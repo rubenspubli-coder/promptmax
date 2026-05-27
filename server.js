@@ -119,7 +119,7 @@ function decryptPrompt(encryptedData) {
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dx6uxrr6s',
   api_key:    process.env.CLOUDINARY_API_KEY    || '637614521198185',
-  api_secret: process.env.CLOUDINARY_API_SECRET || 'ZP6GcJf1rWU6RXFEoz50vjX2GM4'
+  api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
 // ─── Multer (memória — envia direto pro Cloudinary) ───────────
@@ -445,7 +445,7 @@ app.get('/api/stats', async (req, res) => {
 });
 
 // POST novo prompt
-app.post('/api/prompts', upload.single('image'), async (req, res) => {
+app.post('/api/prompts', requireAdmin, upload.single('image'), async (req, res) => {
   try {
     const { title, description, prompt_text, category, tool, tipo } = req.body;
     if (!title || !prompt_text || !category) return res.status(400).json({ error: 'Campos obrigatórios: title, prompt_text, category' });
@@ -487,7 +487,7 @@ app.post('/api/prompts', upload.single('image'), async (req, res) => {
 });
 
 // PUT editar prompt
-app.put('/api/prompts/:id', upload.single('image'), async (req, res) => {
+app.put('/api/prompts/:id', requireAdmin, upload.single('image'), async (req, res) => {
   try {
     const { title, description, prompt_text, category, tool, tipo } = req.body;
     if (prompt_text && prompt_text.startsWith('🔒')) return res.status(400).json({ error: 'O texto do prompt não pode ser o placeholder de bloqueio. Cole o prompt real.' });
@@ -525,7 +525,7 @@ app.put('/api/prompts/:id', upload.single('image'), async (req, res) => {
 });
 
 // DELETE prompt
-app.delete('/api/prompts/:id', async (req, res) => {
+app.delete('/api/prompts/:id', requireAdmin, async (req, res) => {
   try {
     await pool.query('DELETE FROM prompts WHERE id = $1', [req.params.id]);
     res.json({ success: true });
@@ -1110,7 +1110,7 @@ app.get('/api/config', async (req, res) => {
 });
 
 // ─── PUT site config (admin only) ─────────────────────────────
-app.put('/api/config', async (req, res) => {
+app.put('/api/config', requireAdmin, async (req, res) => {
   console.log('🔵 PUT /api/config CHAMADO');
   console.log('📦 Headers:', req.headers);
   console.log('📦 Body:', req.body);
@@ -1171,7 +1171,7 @@ app.get('/api/tags', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.post('/api/tags', async (req, res) => {
+app.post('/api/tags', requireAdmin, async (req, res) => {
   try {
     const { name, code, position } = req.body;
     if (!name || !code || !position) return res.status(400).json({ error: 'name, code e position são obrigatórios' });
@@ -1183,7 +1183,7 @@ app.post('/api/tags', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.put('/api/tags/:id', async (req, res) => {
+app.put('/api/tags/:id', requireAdmin, async (req, res) => {
   try {
     const { name, code, position, active } = req.body;
     const { rows } = await pool.query(
@@ -1194,7 +1194,7 @@ app.put('/api/tags/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.delete('/api/tags/:id', async (req, res) => {
+app.delete('/api/tags/:id', requireAdmin, async (req, res) => {
   try {
     await pool.query('DELETE FROM site_tags WHERE id=$1', [req.params.id]);
     res.json({ ok: true });
