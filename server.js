@@ -752,7 +752,7 @@ app.post('/api/auth/cancel-subscription', async (req, res) => {
     if (!email) return res.status(401).json({ error: 'Não autenticado' });
 
     const { rows } = await pool.query(
-      'SELECT id, name, is_subscriber, kiwify_subscription_id FROM users WHERE email = $1',
+      'SELECT id, name, is_subscriber, kiwify_subscription_id, subscription_expires_at FROM users WHERE email = $1',
       [email]
     );
     if (!rows.length) return res.status(404).json({ error: 'Usuário não encontrado' });
@@ -798,11 +798,15 @@ app.post('/api/auth/cancel-subscription', async (req, res) => {
       console.log(`⚠️ Cancelamento sem Kiwify API (vars ausentes ou subscription_id não registrado)`);
     }
 
-    // Atualizar no banco
+    // Cancela renovação mas mantém acesso até o fim do período pago
     await pool.query(
-      'UPDATE users SET is_subscriber = false, subscription_expires_at = NOW() WHERE email = $1',
+      'UPDATE users SET kiwify_subscription_id = NULL WHERE email = $1',
       [email]
     );
+
+    const expiresAt = user.subscription_expires_at
+      ? new Date(user.subscription_expires_at).toLocaleDateString('pt-BR')
+      : null;
 
     // Enviar email de confirmação
     await sendEmail({
@@ -816,10 +820,13 @@ app.post('/api/auth/cancel-subscription', async (req, res) => {
           </div>
           <div style="padding:32px">
             <p style="font-size:16px">Olá, <strong>${user.name || email}</strong>!</p>
-            <p>Sua assinatura do <strong>Prompts House</strong> foi cancelada com sucesso.</p>
-            <p style="color:#9ca3af;font-size:14px">Você perde o acesso aos prompts premium imediatamente. Se mudar de ideia, é só assinar novamente.</p>
+            <p>Sua assinatura do <strong>Prompts House</strong> foi cancelada com sucesso e não será renovada.</p>
+            ${expiresAt
+              ? `<p style="color:#9ca3af;font-size:14px">Você ainda tem acesso a todos os prompts premium até <strong style="color:#fff">${expiresAt}</strong>, quando o período pago se encerra.</p>`
+              : `<p style="color:#9ca3af;font-size:14px">Seu acesso permanece ativo até o fim do período pago.</p>`
+            }
             <div style="text-align:center;margin:28px 0">
-              <a href="https://promptshouse.com" style="background:linear-gradient(90deg,#f59e0b,#ec4899);color:#08080a;padding:14px 32px;border-radius:50px;text-decoration:none;font-weight:700;font-size:15px">Ver planos →</a>
+              <a href="https://promptshouse.com" style="background:linear-gradient(90deg,#f59e0b,#ec4899);color:#08080a;padding:14px 32px;border-radius:50px;text-decoration:none;font-weight:700;font-size:15px">Acessar o site →</a>
             </div>
             <hr style="border:1px solid rgba(255,255,255,.1);margin:24px 0">
             <p style="color:#6b7280;font-size:12px;text-align:center">Prompts House · Todos os direitos reservados</p>
@@ -1059,8 +1066,10 @@ app.post('/api/webhook/kiwify', async (req, res) => {
     const email = customer?.email;
     if (!email) { console.log('⚠️ Webhook sem email'); return res.json({ success: true }); }
 
-    const isActivation = event === 'order.paid' || order_status === 'paid' || subscription_status === 'active';
-    const isCancellation = event === 'order.refunded' || subscription_status === 'canceled' || order_status === 'refunded';
+    const isActivation  = event === 'order.paid' || order_status === 'paid' || subscription_status === 'active';
+    // Reembolso = perde acesso imediatamente; cancelamento = mantém até subscription_expires_at
+    const isRefund       = event === 'order.refunded' || order_status === 'refunded';
+    const isCancellation = subscription_status === 'canceled';
 
     const subscriptionId = req.body?.Subscription?.id || req.body?.subscription?.id || null;
 
@@ -1154,10 +1163,20 @@ app.post('/api/webhook/kiwify', async (req, res) => {
       }
     }
 
-    if (isCancellation) {
-      console.log(`❌ Cancelando assinatura: ${email}`);
+    if (isRefund) {
+      // Reembolso: revoga acesso imediatamente
+      console.log(`💸 Reembolso — revogando acesso imediato: ${email}`);
       await pool.query(
         'UPDATE users SET is_subscriber = false, subscription_expires_at = NOW() WHERE email = $1',
+        [email]
+      );
+    }
+
+    if (isCancellation) {
+      // Cancelamento: mantém acesso até o fim do período pago (subscription_expires_at já está definido)
+      console.log(`🔕 Cancelamento — acesso mantido até expirar: ${email}`);
+      await pool.query(
+        'UPDATE users SET kiwify_subscription_id = NULL WHERE email = $1',
         [email]
       );
     }
