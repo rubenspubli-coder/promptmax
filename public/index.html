@@ -59,7 +59,7 @@
       .mobile-search-bar > div { display: flex; align-items: center; gap: 8px; flex: 1; padding: 9px 14px; border-radius: 16px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.04); }
       .mobile-search-bar input { background: transparent; border: none; outline: none; color: var(--text); font-size: 13px; width: 100%; font-family: 'Inter', sans-serif; }
       .logo { font-size: 17px !important; font-weight: 700 !important; white-space: nowrap; }
-      .mobile-footer-bar { display: flex !important; }
+      .mobile-footer-bar:not(.hidden) { display: flex; }
       .app { padding-bottom: 80px; padding-top: 107px; }
       .nav-tabs { display: none; }
       .suporte-label { display: none; }
@@ -1084,14 +1084,14 @@ function updateNavForUser(user){
       if(user.is_subscriber){ btnAssinar.style.display = 'none'; }
       else { btnAssinar.textContent = 'Upgrade'; btnAssinar.style.display = ''; }
     }
-    if(mobileFooterBar) mobileFooterBar.style.display = 'none';
+    if(mobileFooterBar) mobileFooterBar.classList.add('hidden');
     if(!user.is_subscriber) showUpgradeBanner();
   } else {
     if(btnLogin)    btnLogin.style.display    = '';
     if(btnRegister) btnRegister.style.display = '';
     if(btnAccount)  btnAccount.style.display  = 'none';
     if(btnAssinar){ btnAssinar.textContent = 'Assinar'; btnAssinar.style.display = ''; }
-    if(mobileFooterBar) mobileFooterBar.style.removeProperty('display');
+    if(mobileFooterBar) mobileFooterBar.classList.remove('hidden');
   }
 }
 
