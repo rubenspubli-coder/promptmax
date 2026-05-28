@@ -5,34 +5,32 @@ const path = require('path');
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
 const crypto = require('crypto');
-const nodemailer = require('nodemailer');
 const bcrypt = require('bcryptjs');
 
-// ─── EMAIL CONFIG ─────────────────────────────────────────────
-const SMTP_PORT = parseInt(process.env.SMTP_PORT || '587');
-const emailTransporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: SMTP_PORT,
-  secure: SMTP_PORT === 465, // true para SSL (porta 465), false para STARTTLS (porta 587)
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
-
-// SMTP_FROM define o remetente (ex: no-reply@promptshouse.com)
-// Necessário quando SMTP_USER não é um email (ex: Resend usa user="resend")
-const SMTP_FROM = process.env.SMTP_FROM || process.env.SMTP_USER;
-
+// ─── EMAIL CONFIG (Resend HTTP API) ───────────────────────────
+// Usa a API HTTP do Resend (porta 443) — evita bloqueio de portas SMTP em cloud
 async function sendEmail({ to, subject, html }) {
-  if (!process.env.SMTP_USER) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from   = process.env.SMTP_FROM || 'no-reply@promptshouse.com';
+
+  if (!apiKey) {
     console.log(`📧 [EMAIL SIMULADO] Para: ${to} | Assunto: ${subject}`);
     return;
   }
-  await emailTransporter.sendMail({
-    from: `"Prompts House" <${SMTP_FROM}>`,
-    to, subject, html,
+
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ from: `Prompts House <${from}>`, to, subject, html }),
   });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Resend API error: ${err}`);
+  }
   console.log(`✅ Email enviado para ${to}`);
 }
 
