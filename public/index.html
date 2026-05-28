@@ -62,6 +62,7 @@
       .mobile-footer-bar { display: flex !important; }
       .app { padding-bottom: 80px; padding-top: 107px; }
       .nav-tabs { display: none; }
+      .suporte-label { display: none; }
     }
     .btn-ghost { padding: 7px 18px; border-radius: 10px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid var(--glass-border); background: transparent; color: var(--muted); font-family: 'Inter', sans-serif; transition: all 0.15s; }
     .btn-ghost:hover { color: var(--text); }
@@ -461,7 +462,7 @@
       <button class="btn-ver-site" id="btn-ver-site" onclick="switchView('home')" style="display:none;padding:7px 18px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--glass-border);background:var(--glass);color:var(--text);font-family:'Inter',sans-serif;transition:all 0.15s;">← Ver Site</button>
       <button id="btn-admin-logout" onclick="adminLogout()" style="display:none;padding:7px 18px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid rgba(239,68,68,0.4);background:rgba(239,68,68,0.12);color:#f87171;font-family:'Inter',sans-serif;transition:all 0.15s;">Sair do Admin</button>
       <!-- Suporte -->
-      <a href="mailto:rubens.pixelperfect@gmail.com" class="btn-entrar" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px" title="Suporte">💬 Suporte</a>
+      <a href="mailto:rubens.pixelperfect@gmail.com" class="btn-entrar" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px" title="Suporte">💬 <span class="suporte-label">Suporte</span></a>
       <!-- Botões visitante (não logado) -->
       <button class="btn-entrar" id="btn-nav-login" onclick="openAuthModal('login')">Entrar</button>
       <button class="btn-assinar" onclick="openSubModal()">Assinar</button>
