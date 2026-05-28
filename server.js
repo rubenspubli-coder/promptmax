@@ -160,7 +160,8 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve arquivos estáticos mas não index.html — a rota SPA injeta o config
+app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 
 // ─── PostgreSQL ───────────────────────────────────────────────
 const pool = new Pool({
@@ -1251,7 +1252,8 @@ app.put('/api/config', requireAdmin, async (req, res) => {
     
     const { rows } = await pool.query('SELECT * FROM site_config WHERE id = 1');
     console.log('✅ Config saved successfully:', rows[0]);
-    
+    _cachedConfig = null; // invalida cache para próxima requisição buscar do banco
+
     res.json(rows[0]);
   } catch (err) {
     console.error('❌ Erro ao atualizar config:', err);
@@ -1298,8 +1300,37 @@ app.delete('/api/tags/:id', requireAdmin, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// SPA fallback
-app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+// ─── Config cache (server-side) ───────────────────────────────
+// Injeta o config visual diretamente no HTML para eliminar o flash em novas máquinas
+const fs = require('fs');
+const indexHtmlPath = path.join(__dirname, 'public', 'index.html');
+let _indexHtml = '';
+try { _indexHtml = fs.readFileSync(indexHtmlPath, 'utf8'); } catch(e) { console.error('Erro ao ler index.html:', e.message); }
+
+let _cachedConfig = null;
+let _configCachedAt = 0;
+const CONFIG_CACHE_TTL = 5 * 60 * 1000; // 5 minutos
+
+async function getConfigCached() {
+  if (_cachedConfig && Date.now() - _configCachedAt < CONFIG_CACHE_TTL) return _cachedConfig;
+  const { rows } = await pool.query('SELECT * FROM site_config WHERE id = 1');
+  _cachedConfig = rows[0] || {};
+  _configCachedAt = Date.now();
+  return _cachedConfig;
+}
+
+// SPA fallback — injeta config no HTML antes de servir
+app.get('*', async (req, res) => {
+  try {
+    const config = await getConfigCached();
+    const script = `<script>window.__INITIAL_CONFIG__=${JSON.stringify(config)};</script>`;
+    const html = _indexHtml.replace('</head>', script + '</head>');
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(html);
+  } catch(e) {
+    res.sendFile(indexHtmlPath);
+  }
+});
 
 // ─── Start ────────────────────────────────────────────────────
 initDB().then(() => {

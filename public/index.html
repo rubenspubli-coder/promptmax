@@ -1543,7 +1543,8 @@ document.addEventListener('keydown',e=>{
 });
 
 // Aplica config visual cacheada ANTES do primeiro paint (elimina flash em visitas repetidas)
-try { const _c = localStorage.getItem('ph_site_config'); if (_c) applyVisualConfig(JSON.parse(_c), { skipVideo: true }); } catch(e) {}
+// Aplica config injetado pelo servidor (elimina flash em qualquer máquina)
+if (window.__INITIAL_CONFIG__) applyVisualConfig(window.__INITIAL_CONFIG__, { skipVideo: true });
 
 checkSubscription();
 // Limpa chaves antigas de auth do admin (migração)
