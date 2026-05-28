@@ -49,13 +49,15 @@
     .mobile-menu-btn { width: 100%; padding: 12px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.06); color: var(--text); font-family: 'Inter', sans-serif; transition: all 0.15s; }
     .mobile-menu-btn:hover { background: rgba(255,255,255,0.12); }
     .header-search { display: flex; flex-shrink: 0; }
+    .mobile-search-bar { display: none; }
     @media (max-width: 768px) {
       .hamburger { display: none !important; }
       .btn-icon { display: none !important; }
       .btn-assinar { display: none !important; }
-      .header-search { flex: 1; }
-      .header-search > div { min-width: auto !important; max-width: 100% !important; width: 100% !important; padding: 10px 16px !important; }
-      .header-search input { font-size: 13px !important; }
+      .header-search { display: none !important; }
+      .mobile-search-bar { display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: var(--glass); border-bottom: 1px solid var(--glass-border); }
+      .mobile-search-bar > div { display: flex; align-items: center; gap: 8px; flex: 1; padding: 9px 14px; border-radius: 16px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.04); }
+      .mobile-search-bar input { background: transparent; border: none; outline: none; color: var(--text); font-size: 13px; width: 100%; font-family: 'Inter', sans-serif; }
       .logo { font-size: 17px !important; font-weight: 700 !important; white-space: nowrap; }
       .mobile-footer-bar { display: flex !important; }
       .app { padding-bottom: 80px; }
@@ -481,6 +483,12 @@
       </button>
     </div>
   </nav>
+  <div class="mobile-search-bar">
+    <div>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.38)" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" id="mobile-search" placeholder="Busca de prompts..." autocomplete="new-password" name="search-prompts-mobile">
+    </div>
+  </div>
   <div class="mobile-menu" id="mobile-menu">
     <button class="mobile-menu-btn" onclick="openAuthModal('login'); toggleMobileMenu()">Entrar</button>
     <button class="mobile-menu-btn" onclick="openAuthModal('register'); toggleMobileMenu()">Cadastrar</button>
@@ -1906,12 +1914,24 @@ async function resetUserPassword(userId, email) {
   });
 })();
 
-// Attach search handler
+// Attach search handler (desktop + mobile)
 const searchInput = document.getElementById('header-search');
 if (searchInput) {
-  searchInput.value = ''; // Force clear on load
+  searchInput.value = '';
   searchInput.addEventListener('input', function(e) {
-    handleSearch(e.target.value);
+    const v = e.target.value;
+    const mob = document.getElementById('mobile-search');
+    if (mob) mob.value = v;
+    handleSearch(v);
+  });
+}
+const mobileSearchInput = document.getElementById('mobile-search');
+if (mobileSearchInput) {
+  mobileSearchInput.value = '';
+  mobileSearchInput.addEventListener('input', function(e) {
+    const v = e.target.value;
+    if (searchInput) searchInput.value = v;
+    handleSearch(v);
   });
 }
 
