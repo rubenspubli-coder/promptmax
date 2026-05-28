@@ -451,13 +451,15 @@
       <div class="header-search">
         <div style="display: flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 20px; border: 1px solid var(--glass-border); background: var(--glass); backdrop-filter: blur(10px); min-width: 320px; max-width: 420px;">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.38)" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          <input type="text" id="header-search" placeholder="Busca de prompts..." value="" autocomplete="off" style="background: transparent; border: none; outline: none; color: var(--text); font-size: 13px; width: 100%; font-family: 'Inter', sans-serif;">
+          <input type="text" id="header-search" placeholder="Busca de prompts..." value="" autocomplete="new-password" name="search-prompts" style="background: transparent; border: none; outline: none; color: var(--text); font-size: 13px; width: 100%; font-family: 'Inter', sans-serif;">
         </div>
       </div>
     </div>
     <div class="nav-right">
       <button class="btn-ver-site" id="btn-ver-site" onclick="switchView('home')" style="display:none;padding:7px 18px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--glass-border);background:var(--glass);color:var(--text);font-family:'Inter',sans-serif;transition:all 0.15s;">← Ver Site</button>
       <button id="btn-admin-logout" onclick="adminLogout()" style="display:none;padding:7px 18px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid rgba(239,68,68,0.4);background:rgba(239,68,68,0.12);color:#f87171;font-family:'Inter',sans-serif;transition:all 0.15s;">Sair do Admin</button>
+      <!-- Suporte -->
+      <a href="mailto:rubens.pixelperfect@gmail.com" class="btn-entrar" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px" title="Suporte">💬 Suporte</a>
       <!-- Botões visitante (não logado) -->
       <button class="btn-entrar" id="btn-nav-login" onclick="openAuthModal('login')">Entrar</button>
       <button class="btn-assinar" onclick="openSubModal()">Assinar</button>
@@ -886,6 +888,21 @@
       <div class="auth-fg" style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Nova Senha</label><input type="password" id="cp-new" placeholder="Mínimo 6 caracteres" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:12px;padding:11px 14px;color:var(--text);font-size:13px;outline:none;margin-top:6px"></div>
       <div class="auth-fg" style="margin-bottom:20px"><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Confirmar Nova Senha</label><input type="password" id="cp-confirm" placeholder="Repita a nova senha" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:12px;padding:11px 14px;color:var(--text);font-size:13px;outline:none;margin-top:6px"></div>
       <button class="btn-auth" onclick="submitChangePassword()" style="width:100%;padding:13px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;border:none;background:linear-gradient(90deg,var(--amber),var(--pink));color:#08080a">Salvar nova senha</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL REDEFINIR SENHA (via link do email) -->
+<div class="modal-overlay" id="reset-pass-modal">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-top">
+      <div><div class="modal-cat">SEGURANÇA</div><div class="modal-title" style="font-size:22px">Redefinir Senha</div></div>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--muted);font-size:13px;margin-bottom:20px">Crie uma nova senha para a sua conta.</p>
+      <div class="auth-fg" style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Nova Senha</label><input type="password" id="rp-new" placeholder="Mínimo 6 caracteres" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:12px;padding:11px 14px;color:var(--text);font-size:13px;outline:none;margin-top:6px"></div>
+      <div class="auth-fg" style="margin-bottom:20px"><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Confirmar Nova Senha</label><input type="password" id="rp-confirm" placeholder="Repita a nova senha" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:12px;padding:11px 14px;color:var(--text);font-size:13px;outline:none;margin-top:6px"></div>
+      <button class="btn-auth" onclick="submitResetPassword()" style="width:100%;padding:13px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;border:none;background:linear-gradient(90deg,var(--amber),var(--pink));color:#08080a">Salvar nova senha</button>
     </div>
   </div>
 </div>
@@ -1546,6 +1563,17 @@ document.addEventListener('keydown',e=>{
 // Aplica config injetado pelo servidor (elimina flash em qualquer máquina)
 if (window.__INITIAL_CONFIG__) applyVisualConfig(window.__INITIAL_CONFIG__, { skipVideo: true });
 
+// Detecta link de redefinição de senha na URL
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  const resetToken = params.get('token');
+  if (resetToken && (window.location.pathname === '/reset-password' || window.location.search.includes('token='))) {
+    window._resetPasswordToken = resetToken;
+    document.getElementById('reset-pass-modal').classList.add('open');
+    history.replaceState({}, '', '/');
+  }
+})();
+
 checkSubscription();
 // Limpa chaves antigas de auth do admin (migração)
 localStorage.removeItem('ph_admin_auth');
@@ -1681,6 +1709,27 @@ async function submitChangePassword() {
   }
 }
 
+// ── REDEFINIÇÃO DE SENHA (via token do email) ─────────────────
+async function submitResetPassword() {
+  const nw = document.getElementById('rp-new').value;
+  const cf = document.getElementById('rp-confirm').value;
+  if (!nw || nw.length < 6) { showToast('Nova senha deve ter ao menos 6 caracteres.', 'error'); return; }
+  if (nw !== cf) { showToast('As senhas não coincidem.', 'error'); return; }
+  const token = window._resetPasswordToken;
+  if (!token) { showToast('Token inválido. Solicite um novo link.', 'error'); return; }
+  try {
+    await api('POST', '/auth/reset-password', { token, new_password: nw });
+    showToast('Senha redefinida com sucesso! Faça login.', 'success');
+    document.getElementById('reset-pass-modal').classList.remove('open');
+    document.getElementById('rp-new').value = '';
+    document.getElementById('rp-confirm').value = '';
+    window._resetPasswordToken = null;
+    openAuthModal('login');
+  } catch(err) {
+    showToast(err.message || 'Token inválido ou expirado.', 'error');
+  }
+}
+
 // ── CONTATOS ADMIN ───────────────────────────────────────────
 // ── GERENCIADOR DE TAGS ──────────────────────────────────────
 
@@ -1778,7 +1827,7 @@ async function loadContacts() {
     const users = await api('GET', '/users');
     tbody.innerHTML = users.map(u => `
       <tr>
-        <td>${escHtml(u.name || '-')}</td>
+        <td>${escHtml(u.name || u.email)}</td>
         <td>${escHtml(u.email)}</td>
         <td><span class="status-badge ${u.is_subscriber ? 'active' : 'inactive'}">${u.is_subscriber ? 'ATIVO' : 'INATIVO'}</span></td>
         <td>${u.plan || '-'}</td>
