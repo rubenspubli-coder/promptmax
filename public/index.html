@@ -1072,6 +1072,7 @@ function updateNavForUser(user){
   const btnAssinar  = document.querySelector('.btn-assinar');
   const accountName = document.getElementById('account-name');
 
+  const mobileFooterBar = document.querySelector('.mobile-footer-bar');
   if(user){
     if(btnLogin)    btnLogin.style.display    = 'none';
     if(btnRegister) btnRegister.style.display = 'none';
@@ -1083,12 +1084,14 @@ function updateNavForUser(user){
       if(user.is_subscriber){ btnAssinar.style.display = 'none'; }
       else { btnAssinar.textContent = 'Upgrade'; btnAssinar.style.display = ''; }
     }
+    if(mobileFooterBar) mobileFooterBar.style.display = 'none';
     if(!user.is_subscriber) showUpgradeBanner();
   } else {
     if(btnLogin)    btnLogin.style.display    = '';
     if(btnRegister) btnRegister.style.display = '';
     if(btnAccount)  btnAccount.style.display  = 'none';
     if(btnAssinar){ btnAssinar.textContent = 'Assinar'; btnAssinar.style.display = ''; }
+    if(mobileFooterBar) mobileFooterBar.style.removeProperty('display');
   }
 }
 
@@ -1564,6 +1567,7 @@ async function delPrompt(id,e){
 
 let toastTimer;
 function showToast(msg,type='success'){const t=document.getElementById('toast');t.textContent=msg;t.className=`toast ${type} show`;clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),3000);}
+function showWelcomeToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.className='toast success show';t.style.cssText='font-size:15px;font-weight:700;padding:16px 24px;bottom:40%;top:auto;';clearTimeout(toastTimer);toastTimer=setTimeout(()=>{t.classList.remove('show');t.style.cssText='';},2000);}
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){ closeModal(); closeAuthModal(); }
 });
@@ -1672,9 +1676,14 @@ async function submitLogin() {
     localStorage.removeItem('ph_admin_token'); // garante que sessão admin não persiste
     if (user.token) { localStorage.setItem('ph_user_token', user.token); delete user.token; }
     localStorage.setItem('ph_current_user', JSON.stringify(user));
-    showToast('Login realizado! ✓', 'success');
     closeAuthModal();
     await syncUserFromServer();
+    const userName = user.name || user.email;
+    if (window.innerWidth <= 768) {
+      showWelcomeToast(`Seja bem vindo(a) de volta, ${userName}!`);
+    } else {
+      showToast('Login realizado! ✓', 'success');
+    }
   } catch (err) {
     showToast('Email ou senha incorretos', 'error');
   }
