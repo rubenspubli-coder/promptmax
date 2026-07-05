@@ -42,7 +42,7 @@ const KIWIFY_PLANS = {
 function detectPlan(product) {
   const name = (product?.name || '').toLowerCase();
   const id   = (product?.id   || '').toLowerCase();
-  if (name.includes('anual') || name.includes('annual') || id.includes('bCQL1VF'.toLowerCase())) return 'annual';
+  if (name.includes('anual') || name.includes('annual') || id.includes('J5E5hNe'.toLowerCase())) return 'annual';
   return 'monthly';
 }
 
