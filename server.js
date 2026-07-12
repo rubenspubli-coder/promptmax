@@ -39,10 +39,48 @@ const KIWIFY_PLANS = {
   monthly: { days: 30,  label: 'Mensal' },
   annual:  { days: 365, label: 'Anual'  },
 };
-function detectPlan(product) {
-  const name = (product?.name || '').toLowerCase();
-  const id   = (product?.id   || '').toLowerCase();
-  if (name.includes('anual') || name.includes('annual') || id.includes('J5E5hNe'.toLowerCase())) return 'annual';
+
+// Slugs das páginas de checkout Kiwify do plano anual (atual + anteriores).
+// ATENÇÃO: o slug que aparece na URL (ex.: pay.kiwify.com.br/J5E5hNe) NÃO é o
+// mesmo valor que a Kiwify envia em Product.id no webhook — por isso não dá
+// para depender só dele para detectar o plano.
+const KIWIFY_ANNUAL_SLUGS = ['J5E5hNe', 'bCQL1VF'];
+
+// Detecta o plano a partir do payload completo do webhook Kiwify.
+// Usa vários sinais independentes: se QUALQUER um indicar anual → anual.
+// Isso corrige o bug em que assinaturas anuais eram tratadas como mensais
+// quando o nome do produto não continha "anual" e o Product.id não batia com
+// o slug hardcoded.
+function detectPlan(product, body = {}) {
+  const sub  = body?.Subscription || body?.subscription || null;
+  const text = JSON.stringify({ product, sub }).toLowerCase();
+
+  // 1) Palavras-chave de recorrência anual no nome do produto/plano.
+  //    (evita "ano" solto para não casar com "plano"/"mensal")
+  if (/anual|annual|yearly|12\s*meses|por ano/.test(text)) return 'annual';
+
+  // 2) Frequência/intervalo de cobrança do plano de assinatura.
+  const freq = (
+    sub?.plan?.frequency || sub?.charge_frequency || sub?.frequency || ''
+  ).toString().toLowerCase();
+  if (['yearly', 'annually', 'annual', 'year'].includes(freq)) return 'annual';
+
+  // 3) Slug de checkout anual presente em qualquer lugar do payload.
+  if (KIWIFY_ANNUAL_SLUGS.some(s => text.includes(s.toLowerCase()))) return 'annual';
+
+  // 4) Valor cobrado (mensal R$19,90 vs anual R$149,90 — margem larga).
+  const rawAmount =
+    body?.Commissions?.charge_amount ?? body?.commission?.charge_amount ??
+    body?.charge_amount ?? body?.order?.charge_amount ??
+    sub?.plan?.value ?? null;
+  if (rawAmount != null) {
+    let v = parseFloat(String(rawAmount).replace(',', '.'));
+    if (!isNaN(v)) {
+      if (v > 1000) v = v / 100; // valor em centavos → reais
+      if (v >= 100) return 'annual';
+    }
+  }
+
   return 'monthly';
 }
 
@@ -274,6 +312,58 @@ async function initDB() {
   `);
   if (fixMaster.rowCount > 0)
     console.log(`🔧 Fix4 conta master reativada:`, fixMaster.rows.map(r => r.email));
+
+  // Fix 5: correção pontual — faustotsiqueira@gmail.com assinou o Plano Anual
+  // mas o webhook detectou como mensal (o slug do checkout não corresponde ao
+  // Product.id enviado pela Kiwify). Corrige para anual (365 dias a partir da
+  // data de assinatura) e notifica o cliente UMA única vez. A guarda
+  // plan <> 'annual' garante idempotência entre deploys.
+  try {
+    const fausto = await pool.query(
+      `SELECT id, email, name, plan FROM users WHERE email = 'faustotsiqueira@gmail.com'`
+    );
+    if (fausto.rows.length && fausto.rows[0].plan !== 'annual') {
+      const u = fausto.rows[0];
+      await pool.query(`
+        UPDATE users
+        SET is_subscriber = true,
+            plan = 'annual',
+            subscription_expires_at = COALESCE(subscribed_at, NOW()) + INTERVAL '365 days'
+        WHERE email = 'faustotsiqueira@gmail.com'
+      `);
+      console.log(`🔧 Fix5 plano anual corrigido para: ${u.email}`);
+      try {
+        await sendEmail({
+          to: u.email,
+          subject: '✅ Seu Plano Anual do Prompts House foi liberado!',
+          html: `
+            <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;background:#080b14;color:#fff;border-radius:16px;overflow:hidden">
+              <div style="padding:32px;background:linear-gradient(135deg,#f59e0b,#ec4899);text-align:center">
+                <h1 style="margin:0;font-size:28px;color:#08080a">Prompts House</h1>
+                <p style="margin:8px 0 0;color:#08080a;opacity:.8">Plano Anual ativado!</p>
+              </div>
+              <div style="padding:32px">
+                <p style="font-size:16px">Olá, <strong>${u.name || u.email}</strong>!</p>
+                <p>Identificamos que sua assinatura do <strong>Plano Anual</strong> havia sido registrada incorretamente. Já corrigimos: seu <strong>acesso anual (12 meses)</strong> a todos os prompts premium está <strong>liberado</strong>. 🎉</p>
+                <p>Não é preciso fazer nada — basta acessar o site com seu email e senha habituais.</p>
+                <div style="text-align:center;margin:28px 0">
+                  <a href="https://promptshouse.com" style="background:linear-gradient(90deg,#f59e0b,#ec4899);color:#08080a;padding:14px 32px;border-radius:50px;text-decoration:none;font-weight:700;font-size:15px">Acessar o site →</a>
+                </div>
+                <p style="color:#9ca3af;font-size:13px">Se tiver qualquer dúvida, é só responder este email.</p>
+                <hr style="border:1px solid rgba(255,255,255,.1);margin:24px 0">
+                <p style="color:#6b7280;font-size:12px;text-align:center">Prompts House · Todos os direitos reservados</p>
+              </div>
+            </div>
+          `,
+        });
+        console.log(`📧 Fix5 email de liberação anual enviado para: ${u.email}`);
+      } catch (mailErr) {
+        console.log(`⚠️ Fix5 falha ao enviar email (acesso já liberado): ${mailErr.message}`);
+      }
+    }
+  } catch (e) {
+    console.log(`⚠️ Fix5 skip: ${e.message}`);
+  }
 
   console.log('✅ Tabela users criada/verificada');
 
@@ -1075,7 +1165,7 @@ app.post('/api/webhook/kiwify', async (req, res) => {
     const subscriptionId = req.body?.Subscription?.id || req.body?.subscription?.id || null;
 
     if (isActivation) {
-      const plan = detectPlan(product);
+      const plan = detectPlan(product, req.body);
       const planDays = KIWIFY_PLANS[plan].days;
       const expiresAt = new Date(Date.now() + planDays * 24 * 60 * 60 * 1000);
       const name = customer?.name || email.split('@')[0];
